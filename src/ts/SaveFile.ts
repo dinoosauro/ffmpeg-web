@@ -115,10 +115,10 @@ export default class FileSaver {
                                              * I think that's the second time something works on Safari and not on Chrome, really surprised since usually it's the other way around.
                                              */
                                             function iFrameFallback() {
-                                                document.body.append(Object.assign(document.createElement("iframe"), {
-                                                    src: `${window.location.href}${window.location.href.endsWith("/") ? "" : "/"}downloader?id=${id}`,
-                                                    style: "display: none"
-                                                }));
+                                                const iframe = document.createElement("iframe");
+                                                iframe.src = `${window.location.href}${window.location.href.endsWith("/") ? "" : "/"}downloader?id=${id}`;
+                                                console.log(iframe);
+                                                document.body.append(iframe);
                                             }
                                             if (!(/^((?!chrome|android).)*safari/i.test(navigator.userAgent))) { // Quick method to detect if Safari is being used. If not, open a pop-up window to download it (since otherwise it would fail).
                                                 const win = window.open(`${window.location.href}${window.location.href.endsWith("/") ? "" : "/"}downloader?id=${id}`, "_blank", "width=200,height=200");
