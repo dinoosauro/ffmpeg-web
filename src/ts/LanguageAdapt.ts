@@ -245,7 +245,8 @@ let translations = new Map<string, TranslationRequirements>([
     ["File extension:", { it: "Estensione del file:" }],
     ["Use WORKERFS for file writing operations. This helps reducing RAM usage.", { it: "Utilizza WORKERFS per le operazioni di scrittura del file. Questo aiuta a ridurre l'utilizzo della RAM." }],
     ["[Using JSZIP - might give errors on many files or large ones]", { it: "[Utilizzando JSZIP - potrebbe dare degli errori se si scelgono tanti file o pesanti]" }],
-    ["[Using Zip.JS - recommended]", { it: "[Utilizzando Zip.JS - consigliato]" }]
+    ["[Using Zip.JS - recommended]", { it: "[Utilizzando Zip.JS - consigliato]" }],
+    ["Use AudioToolbox encoder when choosing standard AAC (not libfdk_aac) and ALAC audio codecs. Available only on macOS.", { it: "Utilizza l'encoder AudioToolbox quando si sceglie AAC (non libfdk_aac) o ALAC come codec audio. Disponibile solo su macOS." }]
 ])
 /**
  * Translate a string

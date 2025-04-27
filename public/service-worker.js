@@ -32,8 +32,56 @@ self.addEventListener('fetch', event => {
     const req = event.request;
     if (req.url.indexOf("updatecode") !== -1 || req.url.indexOf("youtube") !== -1) event.respondWith(fetch(req)); else event.respondWith(networkFirst(req));
 });
+/**
+ * The BroadcastChannel used to communicate with the main window
+ */
+const comms = new BroadcastChannel("comms");
+/**
+ * The Map that contains the zip file ID as the key, and the TransformStream and its writer as a value.
+ */
+const zipStreams = new Map();
+self.addEventListener("message", (msg) => {
+    switch (msg.data.action) {
+        case "CreateStream": {
+            const stream = new TransformStream();
+            zipStreams.set(msg.data.id, {
+                stream,
+                writer: stream.writable.getWriter()
+            });
+            comms.postMessage({ action: "SuccessStream", id: msg.data.id });
+            break;
+        }
+        case "WriteChunk": {
+            const stream = zipStreams.get(msg.data.id);
+            if (stream) {
+                /**
+                 * @type WritableStreamDefaultWriter
+                 */
+                const writer = stream.writer;
+                writer.write(msg.data.chunk);
+            }
+            break;
+        }
+        case "CloseStream": {
+            const stream = zipStreams.get(msg.data.id);
+            if (stream) {
+                stream.writer.close();
+            }
+            break;
+        }
+    }
+})
 
 async function networkFirst(req) {
+    const getStream = zipStreams.get(req.url.substring(req.url.lastIndexOf("/downloader?id=") + "/downloader?id=".length)); // Look if the request is tied with a local zip file. In this case, the readable stream needs to be returned.
+    if (getStream) {
+        return new Response(getStream.stream.readable, {
+            headers: {
+                "Content-Disposition": `attachment; filename="FfmpegWeb-Zip-${Date.now()}.zip"`,
+                "Content-Type": "application/zip"
+            }
+        })
+    }
     try {
         const networkResponse = await fetch(req);
         const cache = await caches.open(cacheName);

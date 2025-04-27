@@ -24,10 +24,10 @@ export default {
     audio: new Map<string, EncoderInfo>([
         ["copy", { displayName: "Copy from input file", extension: "!" }],
         ["libmp3lame", { displayName: "MP3", extension: "mp3" }],
-        ["aac", { displayName: "AAC [aac]", extension: "m4a" }],
+        ["aac", { displayName: "AAC [aac]", extension: "m4a", apple: "aac_at" }],
         ["libfdk_aac", { displayName: "AAC [libfdk_aac]", extension: "m4a" }],
         ["!0", { displayName: "Wave", extension: "wav", isLossless: true }],
-        ["alac", { displayName: "Alac", extension: "m4a", isLossless: true }],
+        ["alac", { displayName: "Alac", extension: "m4a", isLossless: true, apple: "alac_at" }],
         ["flac", { displayName: "Flac", extension: "flac", isLossless: true }],
         ["libopus", { displayName: "Opus", extension: "ogg" }],
         ["libvorbis", { displayName: "Vorbis", extension: "ogg" }],

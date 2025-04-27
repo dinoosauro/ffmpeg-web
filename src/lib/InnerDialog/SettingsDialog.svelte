@@ -156,6 +156,8 @@
                 checked={Settings.enableWorkerFS}
             ></Switch>
         </span>
+    {:else}
+        <br />
     {/if}<br />
     <Switch
         text={getLang("Exit after each timestamp conversion")}
@@ -290,6 +292,15 @@
                 <OptionsPicker arr="hw"></OptionsPicker>
             </Card>
         {/if}
+        <br /><br />
+        <Switch
+            text={getLang(
+                "Use AudioToolbox encoder when choosing standard AAC (not libfdk_aac) and ALAC audio codecs. Available only on macOS.",
+            )}
+            on:change={({ detail }) =>
+                (Settings.hardwareAcceleration.audioToolbox = detail)}
+            checked={Settings.hardwareAcceleration.audioToolbox}
+        ></Switch><br />
     </Card><br />
 {/if}
 <Card forceColor={true} type={1}>

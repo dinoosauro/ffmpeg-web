@@ -37,7 +37,8 @@ let Settings = {
     },
     hardwareAcceleration: {
         type: "none",
-        additionalProps: [] as ChipInterface[]
+        additionalProps: [] as ChipInterface[],
+        audioToolbox: false
     },
     alerts: {
         time: 5000,

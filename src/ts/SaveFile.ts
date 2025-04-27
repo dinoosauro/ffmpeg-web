@@ -2,9 +2,7 @@ import type { IpcRenderer } from "electron/renderer";
 import type JSZip from "jszip";
 import Settings from "./TabOptions/Settings";
 import { fileUrls } from "./Writables";
-import type { Uint8ArrayReader } from "@zip.js/zip.js";
-import type { BlobReader } from "@zip.js/zip.js";
-import type { ZipWriter } from "@zip.js/zip.js";
+import type { ZipWriterStream } from "@zip.js/zip.js";
 
 interface DirectoryPicker {
     id?: string,
@@ -38,9 +36,8 @@ export default class FileSaver {
     #directoryHandle: FileSystemDirectoryHandle | undefined;
     #jsZip: JSZip | undefined;
     #zipJs: {
-        Uint8ArrayReader: typeof Uint8ArrayReader,
-        BlobReader: typeof BlobReader
-        ZipObject: ZipWriter<Blob>
+        ZipObject: ZipWriterStream,
+        id?: string
     } | undefined;
     promise: Promise<void> | undefined;
     /**
@@ -62,13 +59,84 @@ export default class FileSaver {
                     this.#jsZip = new jszip.default();
                     break;
                 }
-                case "zipjs": {
+                case "zipjs": { // A zip file will be generated as a script and downloaded with a Service Worker. In this way, we can save lots of RAM
                     this.#suggestedOutput = "zipjs";
                     const zipjs = await import("@zip.js/zip.js");
+                    /**
+                     * The stream of the zip file
+                     */
+                    const stream = new zipjs.ZipWriterStream();
+                    let channel: BroadcastChannel | undefined = undefined;
+                    /**
+                     * The ID that'll be used to identify the current zip file with the Service Worker. This is required only if the user doesn't use the File System API
+                     */
+                    let id: string | undefined = undefined;
+                    /**
+                     * If a WritableStream has been generated from the File System API
+                     */
+                    let successPicker = false;
+                    if (typeof window.showSaveFilePicker !== "undefined") { // Try saving a file
+                        try {
+                            const handle = await window.showSaveFilePicker({
+                                id: "FFmpegWeb-SaveFile", suggestedName: `FFmpegWeb-Zip-${Date.now()}.zip`, types: [
+                                    {
+                                        description: "Zip File",
+                                        accept: {
+                                            "application/zip": [".zip"]
+                                        }
+                                    }
+                                ]
+                            });
+                            stream.readable.pipeTo(await handle.createWritable());
+                            successPicker = true;
+                        } catch (ex) {
+                            console.warn(ex);
+                        }
+                    }
+                    if (!successPicker) { // Use the service worker to download
+                        await new Promise<void>(async (res) => {
+                            id = crypto?.randomUUID() ?? Math.random().toString();
+                            channel = new BroadcastChannel("comms");
+                            channel.onmessage = (msg) => {
+                                switch (msg.data.action) {
+                                    case "SuccessStream": // The TransformStream has been created in the Service Worker
+                                        if (msg.data.id === id) {
+                                            stream.readable.pipeTo(new WritableStream({ // Pipe the ZipStream to a WritableStream, that'll send every chunk to the Service Worker
+                                                write: (chunk) => {
+                                                    navigator.serviceWorker.controller?.postMessage({ action: "WriteChunk", id, chunk });
+                                                },
+                                                close: () => {
+                                                    navigator.serviceWorker.controller?.postMessage({ action: "CloseStream", id });
+                                                }
+                                            }));
+                                            /**
+                                             * Add an iFrame to the page to download the file. 
+                                             * This seems to work only on Safari, since it causes Chrome to crash and Firefox to block the resource. 
+                                             * I think that's the second time something works on Safari and not on Chrome, really surprised since usually it's the other way around.
+                                             */
+                                            function iFrameFallback() {
+                                                document.body.append(Object.assign(document.createElement("iframe"), {
+                                                    src: `${window.location.href}${window.location.href.endsWith("/") ? "" : "/"}downloader?id=${id}`,
+                                                    style: "display: none"
+                                                }));
+                                            }
+                                            if (!(/^((?!chrome|android).)*safari/i.test(navigator.userAgent))) { // Quick method to detect if Safari is being used. If not, open a pop-up window to download it (since otherwise it would fail).
+                                                const win = window.open(`${window.location.href}${window.location.href.endsWith("/") ? "" : "/"}downloader?id=${id}`, "_blank", "width=200,height=200");
+                                                if (!win) alert("A pop-up window was blocked. Please open it so that the download can start.");
+                                                (new Blob(["This file was automatically generated to close your browser's pop-up window. You can safely delete it."])).stream().pipeTo(stream.writable("_.txt"));
+                                            } else iFrameFallback();
+                                            channel?.close();
+                                            res();
+                                        }
+                                        break;
+                                }
+                            }
+                            navigator.serviceWorker.controller?.postMessage({ action: "CreateStream", id });
+                        })
+                    }
                     this.#zipJs = {
-                        Uint8ArrayReader: zipjs.Uint8ArrayReader,
-                        BlobReader: zipjs.BlobReader,
-                        ZipObject: new zipjs.ZipWriter(new zipjs.BlobWriter())
+                        ZipObject: stream,
+                        id,
                     }
                     break;
                 }
@@ -119,7 +187,12 @@ export default class FileSaver {
             }
             case "zipjs": {
                 if (!this.#zipJs) throw new Error("Zip file must be initialized. Please await this.promise");
-                await this.#zipJs.ZipObject.add(this.sanitize(name, true), file instanceof Blob ? new this.#zipJs.BlobReader(file) : new this.#zipJs.Uint8ArrayReader(file));
+                (file instanceof Blob ? file.stream() : new ReadableStream({
+                    start(controller) {
+                        controller.enqueue(file);
+                        controller.close();
+                    }
+                })).pipeTo(this.#zipJs.ZipObject.writable(this.sanitize(name, true)));
                 break;
             }
             case "handle": {
@@ -157,8 +230,7 @@ export default class FileSaver {
             const zip = await this.#jsZip.generateAsync({ type: "blob" });
             await this.write(zip, `FFmpegWeb-Zip-${Date.now()}.zip`, true);
         } else if (this.#suggestedOutput === "zipjs" && this.#zipJs) {
-            const zip = await this.#zipJs.ZipObject.close();
-            await this.write(zip, `FFmpegWeb-Zip-${Date.now()}.zip`, true);
+            await this.#zipJs.ZipObject.close();
         }
     }
 }

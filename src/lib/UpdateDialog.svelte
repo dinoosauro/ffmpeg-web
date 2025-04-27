@@ -11,6 +11,23 @@
         <AdaptiveAsset asset="icon" width={128}></AdaptiveAsset>
     </div>
     <Card type={1} forceColor={true}>
+        <h3 style="text-align: center;">Version 3.1.4</h3>
+        <Card forceColor={true}>
+            <ul>
+                <li>
+                    The zip files from Zip.JS are now saved as a stream. This
+                    should help using less RAM, and it also brings a more native
+                    experience on Chromium-based browsers.
+                </li>
+                <li>
+                    It's now possible to use AudioToolbox on macOS for AAC and
+                    ALAC encoding. This opt-in feature requires native FFmpeg
+                    and the Electron client.
+                </li>
+            </ul>
+        </Card>
+    </Card><br />
+    <Card type={1} forceColor={true}>
         <h3 style="text-align: center;">Version 3.1.3</h3>
         <Card forceColor={true}>
             <ul>

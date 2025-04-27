@@ -253,6 +253,16 @@ export default class FfmpegHandler {
         }
     }
     /**
+     * Use the OS's native audio encoder, if the user wants so. It's currently used only on macOS for their AudioToolbox's AAC and ALAC encoders.
+     * @param encoder the audio encoder for this operation
+     * @returns the audio encoder to use
+     */
+    #audioCodec = (encoder: string) => {
+        const info = EncoderInfo.audio.get(encoder);
+        if (Settings.hardwareAcceleration.audioToolbox && info?.apple) return info.apple;
+        return encoder;
+    }
+    /**
      * Choose a quality option that could make sense for the video. If the user has chosen quality with a slider, this will return the selected value. Otherwise, it'll try to convert the provided bitrate with a plausible quality number
      * @param val the value that needs to be converted in a quality number
      * @returns a number that can be passed for quality
@@ -316,7 +326,7 @@ export default class FfmpegHandler {
             customFilter.length !== 0 && currentObject.push(`-filter:v`, customFilter);
         } else currentObject.push("-vn");
         if (this.#conversion.isAudioSelected && !isImage) {
-            currentObject.push(`-acodec`, this.#conversion.audioTypeSelected.startsWith("!") ? "copy" : this.#conversion.audioTypeSelected);
+            currentObject.push(`-acodec`, this.#conversion.audioTypeSelected.startsWith("!") ? "copy" : this.#audioCodec(this.#conversion.audioTypeSelected));
             !EncoderInfo.audio.get(this.#conversion.audioTypeSelected)?.isLossless && currentObject.push(this.#conversion.audioOptions.useSlider ? "-qscale:a" : "-b:a", this.#conversion.audioOptions.useSlider ? Math.max(1, Math.min(+this.#conversion.audioOptions.value.replace(/\D/g, ""), 9)).toString() : this.#conversion.audioOptions.value);
             this.#conversion.audioOptions.channels !== -1 && currentObject.push(`-ac`, this.#conversion.audioOptions.channels.toString());
             let customFilter = "";
