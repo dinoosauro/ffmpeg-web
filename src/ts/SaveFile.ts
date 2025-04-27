@@ -117,6 +117,7 @@ export default class FileSaver {
                                             function iFrameFallback() {
                                                 const iframe = document.createElement("iframe");
                                                 iframe.src = `${window.location.href}${window.location.href.endsWith("/") ? "" : "/"}downloader?id=${id}`;
+                                                iframe.style = "width: 1px; height: 1px; position: fixed; top: -1px; left: -1px;"
                                                 console.log(iframe);
                                                 document.body.append(iframe);
                                             }
