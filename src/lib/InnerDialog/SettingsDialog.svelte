@@ -479,6 +479,7 @@
     >
         <option value="en">English (EN)</option>
         <option value="it">Italiano (IT)</option>
+        <option value="zh">中文 (ZH)</option>
     </select>
 </Card><br />
 <Card type={1} forceColor={true}>
