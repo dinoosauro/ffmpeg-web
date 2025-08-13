@@ -207,10 +207,14 @@
                         "[Using JSZIP - might give errors on many files or large ones]",
                     )}</option
                 >
-                <option value="zipjs"
+                <option value="zipjs-blob"
                     >{getLang("Save as a zip file")}
                     {getLang("[Using Zip.JS - recommended]")}</option
                 >
+                <option value="zipjs">
+                    {getLang("Save as a zip file")}
+                    {getLang("[Using Zip.JS and streams - recommended; will use less RAM, but might have issues if the conversion takes a long time]")}
+                </option>
             </optgroup>
         </select>
     </Card>

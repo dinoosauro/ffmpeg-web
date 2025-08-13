@@ -11,6 +11,32 @@
         <AdaptiveAsset asset="icon" width={128}></AdaptiveAsset>
     </div>
     <Card type={1} forceColor={true}>
+        <h3 style="text-align: center;">Version 3.1.6</h3>
+        <Card forceColor={true}>
+            <ul>
+                <li>Improved multiple timestamps support
+                    <ul>
+                        <li>By default, multiple timestamp trimming is now way faster, especially when files are re-encoded</li>
+                        <li>Improved logic behind the timestamp/title division so that it fails less times</li>
+                        <li>Other bug fixes in the multiple timestamp support</li>
+                    </ul>
+                </li>
+                <li>Improved zip file download
+                    <ul>
+                        <li>Zip.JS can now also be used for normal downloads, without using Streams</li>
+                        <li>Improved the reliability of zip file download using the Service Worker</li>
+                    </ul>
+                </li>
+                <li>Improved settings saving
+                    <ul>
+                        <li>Settings are now saved every time they're changed, while before they were saved only when the user closed the page (and mobile browser didn't trigger that event)</li>
+                    </ul>
+                </li>
+                <li>Other bug fixes</li>
+            </ul>
+        </Card>
+    </Card><br>
+    <Card type={1} forceColor={true}>
         <h3 style="text-align: center;">Version 3.1.5</h3>
         <Card forceColor={true}>
             <ul>

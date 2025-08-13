@@ -58,7 +58,9 @@ self.addEventListener("message", (msg) => {
                  * @type WritableStreamDefaultWriter
                  */
                 const writer = stream.writer;
-                writer.write(msg.data.chunk);
+                writer.write(msg.data.chunk).then(() => {
+                    comms.postMessage({action: "SuccessWrite", operationId: msg.data.operationId})
+                });
             }
             break;
         }
@@ -67,6 +69,7 @@ self.addEventListener("message", (msg) => {
             if (stream) {
                 stream.writer.close();
             }
+            comms.postMessage({ action: "SuccessClose", id: msg.data.id });
             break;
         }
     }
@@ -82,6 +85,7 @@ async function networkFirst(req) {
             }
         })
     }
+    if (req.url.endsWith("/ping")) return new Response("Success.");
     try {
         const networkResponse = await fetch(req);
         const cache = await caches.open(cacheName);

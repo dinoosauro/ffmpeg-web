@@ -2,7 +2,7 @@ import type { IpcRenderer } from "electron/renderer";
 import type JSZip from "jszip";
 import Settings from "./TabOptions/Settings";
 import { fileUrls } from "./Writables";
-import type { ZipWriterStream } from "@zip.js/zip.js";
+import type { Uint8ArrayReader, BlobReader, ZipWriter, ZipWriterStream } from "@zip.js/zip.js";
 
 interface DirectoryPicker {
     id?: string,
@@ -32,12 +32,15 @@ declare global {
  * Save, or move (if using native version), a file
  */
 export default class FileSaver {
-    #suggestedOutput: "handle" | "zip" | "link" | "zipjs" = "link";
+    #suggestedOutput: "handle" | "zip" | "link" | "zipjs" | "zipjs-blob" = "link";
     #directoryHandle: FileSystemDirectoryHandle | undefined;
     #jsZip: JSZip | undefined;
     #zipJs: {
-        ZipObject: ZipWriterStream,
-        id?: string
+        ZipObject: ZipWriterStream | ZipWriter<Blob>,
+        id?: string,
+        interval: number,
+        BlobReader: typeof BlobReader,
+        Uint8ArrayReader: typeof Uint8ArrayReader
     } | undefined;
     promise: Promise<void> | undefined;
     /**
@@ -93,17 +96,25 @@ export default class FileSaver {
                             console.warn(ex);
                         }
                     }
+                    const interval = setInterval(() => {fetch("./ping")}, 1000); // We'll try keeping the Service Worker alive 
                     if (!successPicker) { // Use the service worker to download
                         await new Promise<void>(async (res) => {
                             id = crypto?.randomUUID() ?? Math.random().toString();
                             channel = new BroadcastChannel("comms");
+                            /**
+                             * A Map that contains all the Promises that should be resolved, with a key their ID.
+                             * This is done so that, before writing the next chunk, we're sure the service worker has finished writing the previous one.
+                             */
+                            let promiseStore = new Map<string, () => void>([]);
                             channel.onmessage = (msg) => {
                                 switch (msg.data.action) {
-                                    case "SuccessStream": // The TransformStream has been created in the Service Worker
+                                    case "SuccessStream": { // The TransformStream has been created in the Service Worker
                                         if (msg.data.id === id) {
                                             stream.readable.pipeTo(new WritableStream({ // Pipe the ZipStream to a WritableStream, that'll send every chunk to the Service Worker
-                                                write: (chunk) => {
-                                                    navigator.serviceWorker.controller?.postMessage({ action: "WriteChunk", id, chunk });
+                                                write: async (chunk) => {
+                                                    const operationId = crypto?.randomUUID() ?? Math.random().toString();
+                                                    navigator.serviceWorker.controller?.postMessage({ action: "WriteChunk", id, chunk, operationId });
+                                                    await new Promise<void>(res => promiseStore.set(operationId, res));
                                                 },
                                                 close: () => {
                                                     navigator.serviceWorker.controller?.postMessage({ action: "CloseStream", id });
@@ -126,10 +137,19 @@ export default class FileSaver {
                                                 if (!win) alert("A pop-up window was blocked. Please open it so that the download can start.");
                                                 (new Blob(["This file was automatically generated to close your browser's pop-up window. You can safely delete it."])).stream().pipeTo(stream.writable("_.txt"));
                                             } else iFrameFallback();
-                                            channel?.close();
                                             res();
                                         }
                                         break;
+                                    }
+                                    case "SuccessWrite": { // Resolve the promise
+                                        const promise = promiseStore.get(msg.data.operationId);
+                                        promise && promise();
+                                        break;
+                                    }
+                                    case "SuccessClose": { // We no longer need the BroadcastChannel
+                                        id === msg.data.id && channel?.close();
+                                        break;
+                                    }
                                 }
                             }
                             navigator.serviceWorker.controller?.postMessage({ action: "CreateStream", id });
@@ -138,6 +158,21 @@ export default class FileSaver {
                     this.#zipJs = {
                         ZipObject: stream,
                         id,
+                        interval,
+                        BlobReader: zipjs.BlobReader,
+                        Uint8ArrayReader: zipjs.Uint8ArrayReader
+                    }
+                    break;
+                }
+                case "zipjs-blob": { // Still use Zip.JS, but use the classic download method.
+                    this.#suggestedOutput = "zipjs-blob";
+                    const zipjs = await import("@zip.js/zip.js");
+                    this.#zipJs = {
+                        ZipObject: new zipjs.ZipWriter(new zipjs.BlobWriter()),
+                        id: "-1",
+                        interval: -1,
+                        BlobReader: zipjs.BlobReader,
+                        Uint8ArrayReader: zipjs.Uint8ArrayReader
                     }
                     break;
                 }
@@ -166,7 +201,7 @@ export default class FileSaver {
     write = async (file: Uint8Array | Blob, name: string, forceLink?: boolean) => {
         function downloadLink() {
             const a = document.createElement("a");
-            a.href = URL.createObjectURL(file instanceof Blob ? file : new Blob([file]));
+            a.href = URL.createObjectURL(file instanceof Blob ? file : new Blob([file] as BlobPart[]));
             Settings.fileSaver.keepInMemory && fileUrls.update((val) => {
                 val.push({ name, path: a.href });
                 return [...val];
@@ -193,7 +228,13 @@ export default class FileSaver {
                         controller.enqueue(file);
                         controller.close();
                     }
-                })).pipeTo(this.#zipJs.ZipObject.writable(this.sanitize(name, true)));
+                })).pipeTo((this.#zipJs.ZipObject as ZipWriterStream).writable(this.sanitize(name, true)));
+                break;
+            }
+            case "zipjs-blob": {
+                if (!this.#zipJs) return;
+                await (this.#zipJs?.ZipObject as ZipWriter<Blob>).add(name, file instanceof Uint8Array ? new this.#zipJs.Uint8ArrayReader(file) : new this.#zipJs.BlobReader(file));
+                console.log("Added!");
                 break;
             }
             case "handle": {
@@ -204,7 +245,7 @@ export default class FileSaver {
                 for (let remainingPath of fileSplit) tempHandle = await tempHandle.getDirectoryHandle(remainingPath, { create: true });
                 const systemFile = await tempHandle.getFileHandle(this.sanitize(fileName), { create: true });
                 const writable = await systemFile.createWritable();
-                await writable.write(file);
+                await writable.write(file as Blob);
                 await writable.close();
                 break;
             }
@@ -232,6 +273,10 @@ export default class FileSaver {
             await this.write(zip, `FFmpegWeb-Zip-${Date.now()}.zip`, true);
         } else if (this.#suggestedOutput === "zipjs" && this.#zipJs) {
             await this.#zipJs.ZipObject.close();
+            clearInterval(this.#zipJs.interval);
+        } else if (this.#suggestedOutput === "zipjs-blob" && this.#zipJs) {
+            const zip = await (this.#zipJs.ZipObject as ZipWriter<Blob>).close();
+            await this.write(zip as Blob, `FFmpegWeb-Zip-${Date.now()}.zip`, true);
         }
     }
 }

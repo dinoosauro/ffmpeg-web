@@ -1,3 +1,4 @@
+import UpdateStorage from "../Storage/UpdateStorage";
 import UpdateJsonProperties from "../UpdateJSONProperties";
 import Settings from "./Settings";
 
@@ -69,7 +70,8 @@ let ConversionOptions = {
             divider: "",
             timestampAtLeft: true,
             smartMetadata: false,
-            startFrom: 1
+            startFrom: 1,
+            copySources: true
         }
     },
     audioToVideo: {
@@ -105,7 +107,7 @@ let ConversionOptions = {
         /**
          * Disable 0.11.x only for this section (since it's unstable)
          */
-        disable011: true,
+        disable011: false,
         /**
          * Get loop from audio duration. Disable it if you're having issues with the length of the file.
          */
@@ -117,12 +119,16 @@ let ConversionOptions = {
         /**
          * Restore presentation timestamps to START. This *might* help fixing wrong timestamps.
          */
-        restorePTS: false
+        restorePTS: false,
+        /**
+         * If enabled, the single-threaded version of FFmpeg WebAssembly should be used if available (so, if 0.12.x is being loaded)
+         */
+        useSingleThreadedIfAvailable: false
     }
 };
 if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {
     const json = JSON.parse(localStorage.getItem("ffmpegWeb-LastSettings") ?? "{}");
     ConversionOptions = UpdateJsonProperties(json, ConversionOptions);
 }
-window.addEventListener("beforeunload", () => localStorage.getItem("ffmpegWeb-SavePreferences") !== "a" && localStorage.setItem(`ffmpegWeb-LastSettings`, JSON.stringify(ConversionOptions)));
+ConversionOptions = UpdateStorage(ConversionOptions, "ffmpegWeb-LastSettings");
 export default ConversionOptions;

@@ -1,6 +1,6 @@
 interface TranslationRequirements {
-    it: string
-    zh: string // 添加简体中文支持
+    it?: string
+    zh?: string // 添加简体中文支持
 }
 
 interface Credits {
@@ -136,7 +136,6 @@ let translations = new Map<string, TranslationRequirements>([
     ["Choose a metadata from the list below, and add its value.", { it: "Scegli un metadato dalla lista in basso, ed scrivi il suo valore.", zh: "从下方列表中选择元数据并添加其值" }],
     ["Custom key", { it: "Chiave personalizzata", zh: "自定义键" }],
     ["Value", { it: "Valore", zh: "值" }],
-    ["Add metadata", { it: "Aggiungi metadato", zh: "添加元数据" }],
     ["Added metadata:", { it: "Metadati aggiunti", zh: "已添加元数据：" }],
     ["Delete", { it: "Elimina", zh: "删除" }],
     ["Add custom album art", { it: "Aggiungi copertina personalizzata", zh: "添加自定义专辑封面" }],
@@ -260,7 +259,10 @@ let translations = new Map<string, TranslationRequirements>([
     ["Use WORKERFS for file writing operations. This helps reducing RAM usage.", { it: "Utilizza WORKERFS per le operazioni di scrittura del file. Questo aiuta a ridurre l'utilizzo della RAM.", zh: "使用 WORKERFS 进行文件写入操作。这有助于减少 RAM 使用" }],
     ["[Using JSZIP - might give errors on many files or large ones]", { it: "[Utilizzando JSZIP - potrebbe dare degli errori se si scelgono tanti file o pesanti]", zh: "[使用 JSZIP - 可能在处理大量或大型文件时出错]" }],
     ["[Using Zip.JS - recommended]", { it: "[Utilizzando Zip.JS - consigliato]", zh: "[使用 Zip.JS - 推荐]" }],
-    ["Use AudioToolbox encoder when choosing standard AAC (not libfdk_aac) and ALAC audio codecs. Available only on macOS.", { it: "Utilizza l'encoder AudioToolbox quando si sceglie AAC (non libfdk_aac) o ALAC come codec audio. Disponibile solo su macOS.", zh: "选择标准 AAC（非 libfdk_aac）和 ALAC 音频编解码器时使用 AudioToolbox 编码器。仅在 macOS 上可用" }]
+    ["Use AudioToolbox encoder when choosing standard AAC (not libfdk_aac) and ALAC audio codecs. Available only on macOS.", { it: "Utilizza l'encoder AudioToolbox quando si sceglie AAC (non libfdk_aac) o ALAC come codec audio. Disponibile solo su macOS.", zh: "选择标准 AAC（非 libfdk_aac）和 ALAC 音频编解码器时使用 AudioToolbox 编码器。仅在 macOS 上可用" }],
+    ["Speed up multiple timestamp conversion by using a little bit more RAM. Disable if you're facing conversion issues.", {it: "Velocizza la conversione di più timestamp utilizzando un po' più di RAM. Disabilita nel caso dovessi avere dei problemi nella conversione."}],
+    ["[Using Zip.JS and streams - recommended; will use less RAM, but might have issues if the conversion takes a long time]", {it: "[Utilizzando Zip.JS e gli stream - consigliato; utilizza meno RAM, ma potrebbe dare problemi se la conversione richiede tanto tempo]"}],
+    ["Use single-threaded version of FFmpeg WebAssembly if available (only for this section)", {it: "Utilizza la versione single-threaded di FFmpeg WebAssembly se disponibile (solo per questa sezione)"}]
 ])
 /**
  * Translate a string

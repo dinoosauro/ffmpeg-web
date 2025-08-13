@@ -1,4 +1,5 @@
 import type { ChipInterface } from "../../interfaces/chip";
+import UpdateStorage from "../Storage/UpdateStorage";
 import Settings from "./Settings";
 
 let InputOptions: { val: ChipInterface[] } = { val: [] };
@@ -10,5 +11,5 @@ if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {
         console.warn("Failed settings recovery");
     }
 }
-window.addEventListener("beforeunload", () => localStorage.getItem("ffmpegWeb-SavePreferences") !== "a" && localStorage.setItem("ffmpegWeb-LastInputStorage", JSON.stringify(InputOptions)));
+InputOptions = UpdateStorage(InputOptions, "ffmpegWeb-LastInputStorage");
 export default InputOptions;

@@ -1,4 +1,5 @@
 import type { ChipInterface } from "../../interfaces/chip";
+import UpdateStorage from "../Storage/UpdateStorage";
 import UpdateJsonProperties from "../UpdateJSONProperties";
 
 let Settings = {
@@ -55,6 +56,6 @@ let Settings = {
 }
 const json = JSON.parse(localStorage.getItem("ffmpegWeb-LastGeneralSettings") ?? "{}");
 Settings = UpdateJsonProperties(json, Settings);
-window.addEventListener("beforeunload", () => localStorage.setItem(`ffmpegWeb-LastGeneralSettings`, JSON.stringify(Settings)));
+Settings = UpdateStorage(Settings, "ffmpegWeb-LastGeneralSettings")
 
 export default Settings;

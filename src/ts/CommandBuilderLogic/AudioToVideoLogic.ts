@@ -25,7 +25,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
      */
     const chosenImage = albumToVideoBackground.img;
     const [videoCodec, audioCodec] = [ConversionOptions.videoTypeSelected, ConversionOptions.audioTypeSelected];
-    const obj = new ffmpeg(((Settings.version === "0.11.x" && chosenConversionOptions.disable011 ? "0.12.x" : Settings.version) as "0.11.x" | "0.12.x"));
+    const obj = new ffmpeg(((Settings.version === "0.11.x" && chosenConversionOptions.disable011 ? "0.12.x" : Settings.version) as "0.11.x" | "0.12.x"), chosenConversionOptions.useSingleThreadedIfAvailable);
     await obj.promise;
     const fileSave = new FileSaver(Settings.storageMethod, handle);
     /**
@@ -109,7 +109,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
                 })
             })
         } else {
-            imageResult = new Blob([imageResult]);
+            imageResult = new Blob([imageResult as BlobPart]);
         }
         /**
          * The URL of the image used as a base for metadata editing
@@ -158,7 +158,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
         // @ts-ignore | We no longer need to fetch console updates
         document.removeEventListener("consoleUpdate", consoleUpdate);
         for (const str in metadataObject) metadataObject[str] = metadataObject[str].substring(0, metadataObject[str].length - 1); // Delete \n from all the metadata fields
-        chosenConversionOptions.saveTemp && await obj.writeFile(new File([JSON.stringify(metadataObject)], `__FfmpegWebExclusive__metadata_${randomImageIdentifier}.json`));
+        chosenConversionOptions.saveTemp && await obj.writeFile(new File([JSON.stringify(metadataObject)], `__FfmpegWebExclusive__metadata_${randomImageIdentifier}.json`), true);
         /**
          * The canvas where the main metadata will be written
          */
@@ -188,7 +188,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
                 ctx.fillText(str, width * 5 / 100, writeFrom);
                 writeFrom += (height * 8 / 100);
             };
-            await obj.writeFile(new File([await new Promise<Blob>((resolve) => generalInfoCanvas.toBlob((blob) => blob && resolve(blob)))], `__FfmpegWebExclusive__MainImg_${randomImageIdentifier}.png`));
+            await obj.writeFile(new File([await new Promise<Blob>((resolve) => generalInfoCanvas.toBlob((blob) => blob && resolve(blob)))], `__FfmpegWebExclusive__MainImg_${randomImageIdentifier}.png`), true);
             runFile += `file '__FfmpegWebExclusive__MainImg_${randomImageIdentifier}.png'\nduration ${duration}`;
         }
         ctx.font = `${height * 6 / 100}px ${chosenConversionOptions.font}`;
@@ -229,10 +229,10 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
         if (chosenConversionOptions.content.showAlbumArt) runFile += `${runFile.length === 0 ? "" : "\n"}file '__FfmpegWebExclusive__img_${randomImageIdentifier}.png'\nduration ${duration}`; // If the user wants to show the album art, add it to the runFile.
         metadataImages.push(metadataImages[metadataImages.length - 1]); // We'll add two times the same last image so that it's displayed in the loop. I don't know why FFmpeg needs this, but otherwise it doesn't work.
         for (let i = 0; i < metadataImages.length; i++) {
-            await obj.writeFile(new File([metadataImages[i]], `__FfmpegWebExclusive__${i}_${randomImageIdentifier}.png`));
+            await obj.writeFile(new File([metadataImages[i]], `__FfmpegWebExclusive__${i}_${randomImageIdentifier}.png`), true);
             runFile += `${runFile.length === 0 ? "" : "\n"}file '__FfmpegWebExclusive__${i}_${randomImageIdentifier}.png'\nduration ${duration}`;
         }
-        await obj.writeFile(new File([runFile], `__FfmpegWebExclusive__run${randomImageIdentifier}.txt`));
+        await obj.writeFile(new File([runFile], `__FfmpegWebExclusive__run${randomImageIdentifier}.txt`), true);
         /**
          * Get information about hardware acceleration for the output video
          */
@@ -264,6 +264,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
                 hardwareAcceleration.after.push("-af", "asetpts=PTS-STARTPTS"); // Same for audio
             }
             const start = await ffmpegOperation.start([...hardwareAcceleration.beginning, "-i", `__FfmpegWebExclusive__SecondOutput_${randomImageIdentifier}_.mp4`, "-i", FFmpegFileNameHandler(singleFile), "-map_metadata", "1", "-vcodec", outputVideoInfo, "-acodec", audioCodec, "-b:a", chosenConversionOptions.audioBitrate, "-map", "0:v:0", "-map", "1:a:0", "-b:v", chosenConversionOptions.videoBitrate, ...(outputVideoInfo !== "copy" ? hardwareAcceleration.after : []), ...(chosenConversionOptions.useInterleaveDelta ? ["-max_interleave_delta", "0"] : []), ...(chosenConversionOptions.useDuration ? ["-to", audioDuration] : []), `__FfmpegWebExclusive__ThirdOutput_${randomImageIdentifier}_.${chosenConversionOptions.extension}`]) // Start the ffmpeg process: finally, we'll add the audio and transcode it to the output codec. If the seconds method is being used, it'll be trimmed to the audio duration to avoid having a video longer than the audio.
+            console.log(start);
             /**
              * If the output file is a Uint8Array, the result is from FFmpeg WebAssembly, and it'll be written using standard JavaScript APIs. Otherwise, it's a path for the native FFmpeg process, and it'll be moved using Node's FS API.
              */
@@ -273,15 +274,18 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
             break;
         }
         ffmpegOperation.operationComplete(); // Delete the downloaded items from the list
-        for (const file of [FFmpegFileNameHandler(singleFile), ...metadataImages.map((item, i) => `__FfmpegWebExclusive__${i}_${randomImageIdentifier}.png`), `__FfmpegWebExclusive__img_${randomImageIdentifier}.png`, `__FfmpegWebExclusive__run${randomImageIdentifier}.txt`, `__FfmpegWebExclusive__FirstOutput_${randomImageIdentifier}.mp4`, ...(chosenConversionOptions.saveTemp ? [`__FfmpegWebExclusive__metadata_${randomImageIdentifier}.json`] : []), ...(chosenConversionOptions.content.showQuickInfo ? [`__FfmpegWebExclusive__MainImg_${randomImageIdentifier}.png`] : [])]) { // Most of the files that need to be deleted. If the user wants to save temporary files, they'll be downloaded.
+        let hasFirstFileBeenDone = false; // The first file is the source file, and it is not in the virtual memory. All the other files, however, are
+        for (const file of [...metadataImages.map((item, i) => `__FfmpegWebExclusive__${i}_${randomImageIdentifier}.png`), `__FfmpegWebExclusive__img_${randomImageIdentifier}.png`, `__FfmpegWebExclusive__run${randomImageIdentifier}.txt`, `__FfmpegWebExclusive__FirstOutput_${randomImageIdentifier}.mp4`, ...(chosenConversionOptions.saveTemp ? [`__FfmpegWebExclusive__metadata_${randomImageIdentifier}.json`] : []), ...(chosenConversionOptions.content.showQuickInfo ? [`__FfmpegWebExclusive__MainImg_${randomImageIdentifier}.png`] : [])]) { // Most of the files that need to be deleted. If the user wants to save temporary files, they'll be downloaded.
             if (chosenConversionOptions.saveTemp && FFmpegFileNameHandler(singleFile) !== file && file !== `__FfmpegWebExclusive__run${randomImageIdentifier}.txt`) {
                 const tempFile = await obj.readFile(file);
                 const title = `[${fileSave.sanitize(singleFile.name)}] ${file.replace("__FfmpegWebExclusive__", "").replace(`_${randomImageIdentifier}`, "")}`;
                 tempFile ? await fileSave.write(tempFile, title) : await fileSave.native(file, title, singleFile.path);
             }
-            await obj.removeFile(file); // And remove the source files from the FS.
+            await obj.removeFile(file, hasFirstFileBeenDone); // And remove the source files from the FS.
+            hasFirstFileBeenDone = true
         }
-        await obj.removeFile(`__FfmpegWebExclusive__SecondOutput_${randomImageIdentifier}_.mp4`); // Remove the looped video
+        await obj.removeFile(FFmpegFileNameHandler(singleFile));
+        await obj.removeFile(`__FfmpegWebExclusive__SecondOutput_${randomImageIdentifier}_.mp4`, true); // Remove the looped video
         await obj.removeFile(`__FfmpegWebExclusive__ThirdOutput_${randomImageIdentifier}_.${chosenConversionOptions.extension}`); // Remove the final video
         Settings.exit.afterFile && obj.exit(); // Exit from FFmpeg
         /**

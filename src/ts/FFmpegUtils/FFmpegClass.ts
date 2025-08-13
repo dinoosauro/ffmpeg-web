@@ -55,19 +55,23 @@ export default class ffmpeg {
     writeFile!: (file: File, alsoOnOS?: boolean) => Promise<void>;
     readFile!: (name: string, alsoOnOS?: boolean) => Promise<Uint8Array | undefined>;
     exec!: (command: string[]) => Promise<void>;
-    removeFile!: (file: File | string) => Promise<void>;
+    removeFile!: (file: File | string, isFromVirtualMemory?: boolean) => Promise<void>;
     exit!: () => void;
     native = false;
     operationId = 0;
     /**
      * If WORKERFS is being used, and so a virtual drive should be mounted for file reading
      */
-    #isMounted = false;
+    isMounted = false;
     /**
      * Key: path, value: array of files to add
      */
     #filesToMount: any = {};
-    constructor(type: FFmpegVersions, urls?: FfmpegUrls) {
+    /**
+     * A list of the files that have already been mounted to the WORKERFS
+     */
+    #filesAlreadyMounted: string[] = []
+    constructor(type: FFmpegVersions, forceSingleThreaded?: boolean ) {
         this.promise = new Promise<void>((resolve) => { this.#resolvePromise = resolve })
         currentConversionValue.update((val) => { // New conversion ID
             this.operationId = val;
@@ -116,17 +120,17 @@ export default class ffmpeg {
                     const obj = new ffmpeg.FFmpeg();
                     this.load = async () => {
                         !obj.loaded && await obj.load({
-                            coreURL: URL.createObjectURL(await (await fetch(typeof window.isLocal !== "undefined" ? `./assets/ffmpeg12/ffmpeg-core${Settings.useMultiThreaded ? "mt" : ""}.js` : `https://unpkg.com/@ffmpeg/core${Settings.useMultiThreaded ? "-mt" : ""}@0.12.6/dist/esm/ffmpeg-core.js`)).blob()),
-                            wasmURL: URL.createObjectURL(await (await fetch(typeof window.isLocal !== "undefined" ? `./assets/ffmpeg12/ffmpeg-core${Settings.useMultiThreaded ? "mt" : ""}.wasm` : `https://unpkg.com/@ffmpeg/core${Settings.useMultiThreaded ? "-mt" : ""}@0.12.6/dist/esm/ffmpeg-core.wasm`)).blob()),
+                            coreURL: URL.createObjectURL(await (await fetch(typeof window.isLocal !== "undefined" ? `./assets/ffmpeg12/ffmpeg-core${Settings.useMultiThreaded && !forceSingleThreaded ? "mt" : ""}.js` : `https://unpkg.com/@ffmpeg/core${Settings.useMultiThreaded && !forceSingleThreaded ? "-mt" : ""}@0.12.6/dist/esm/ffmpeg-core.js`)).blob()),
+                            wasmURL: URL.createObjectURL(await (await fetch(typeof window.isLocal !== "undefined" ? `./assets/ffmpeg12/ffmpeg-core${Settings.useMultiThreaded && !forceSingleThreaded ? "mt" : ""}.wasm` : `https://unpkg.com/@ffmpeg/core${Settings.useMultiThreaded && !forceSingleThreaded ? "-mt" : ""}@0.12.6/dist/esm/ffmpeg-core.wasm`)).blob()),
                             workerURL: URL.createObjectURL(await (await fetch(typeof window.isLocal !== "undefined" ? "./assets/ffmpeg12/ffmpeg-core.worker.js" : "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.worker.js")).blob())
                         });
                     }
-                    this.writeFile = async (file) => {
-                        this.#isMounted = Settings.enableWorkerFS;
+                    this.writeFile = async (file, alsoOnOS) => {
+                        this.isMounted = Settings.enableWorkerFS;
                         // Create, one path at a time, the directories necessary for the file
                         const namePath = FFmpegFileNameHandler(file).split("/");
                         const name = namePath.pop();
-                        this.#isMounted && namePath.unshift("mount");
+                        this.isMounted && !alsoOnOS && namePath.unshift("mount");
                         if (!name) throw new Error("Undefined name array!");
                         for (let i = 0; i < namePath.length; i++) {
                             try {
@@ -135,7 +139,7 @@ export default class ffmpeg {
                                 console.warn(ex);
                             }
                         }
-                        if (this.#isMounted) {
+                        if (this.isMounted && !alsoOnOS) {
                             const path = namePath.join("/");
                             if (!this.#filesToMount[path]) this.#filesToMount[path] = [];
                             this.#filesToMount[path].push(file); // Add to that path the file. It'll be mounted when the command is executed.
@@ -146,13 +150,14 @@ export default class ffmpeg {
                     }
                     this.exec = (command) => {
                         return new Promise<void>(async (resolve, reject) => {
-                            if (this.#isMounted) {
+                            if (this.isMounted) {
                                 for (let i = 0; i < command.length; i++) {
-                                    if (command[i].toLowerCase() === "-i") command[i + 1] = `mount/${command[i + 1]}`;
+                                    if (command[i].toLowerCase() === "-i" && (!command[i + 1].startsWith("__FfmpegWebExclusive__") || command[i + 1].startsWith("__FfmpegWebExclusive__Reuploaded"))) command[i + 1] = `mount/${command[i + 1]}`;
                                 }
                                 for (const item in this.#filesToMount) {
-                                    console.log(item, this.#filesToMount[item]);
+                                    if (this.#filesAlreadyMounted.indexOf(item) !== -1) continue;
                                     await obj.mount("WORKERFS", { files: this.#filesToMount[item] }, item);
+                                    this.#filesAlreadyMounted.push(item);
                                 }
                             }
                             (await obj.exec(command)) === 0 ? resolve() : reject();
@@ -163,10 +168,14 @@ export default class ffmpeg {
                         updateConsole({ str: message, operation: this.operationId });
                         document.getElementById("addContent")?.scrollTo({ top: document.getElementById("addContent")?.scrollHeight, behavior: "smooth" })
                     });
-                    this.removeFile = async (file) => {
+                    this.removeFile = async (file, isFromVirtualMemory) => {
                         const path = typeof file === "string" ? file : FFmpegFileNameHandler(file);
                         try {
-                            this.#isMounted ? await obj.unmount(`mount/${path.substring(0, Math.max(0, path.lastIndexOf("/")))}`) : await obj.deleteFile(path);
+                            if (this.isMounted && !isFromVirtualMemory) {
+                                await obj.unmount(`mount/${path.substring(0, Math.max(0, path.lastIndexOf("/")))}`);
+                                const index = this.#filesAlreadyMounted.indexOf(`mount${path.indexOf("/") === -1 ? "" : "/"}${path.substring(0, Math.max(0, path.lastIndexOf("/")))}`);
+                                index !== -1 && this.#filesAlreadyMounted.splice(index, 1);
+                            } else await obj.deleteFile(path);
                         } catch (ex) {
                             console.warn(ex);
                         }

@@ -1,3 +1,4 @@
+import UpdateStorage from "../Storage/UpdateStorage";
 import UpdateJsonProperties from "../UpdateJSONProperties";
 import Settings from "./Settings";
 
@@ -19,5 +20,5 @@ if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {
     const json = JSON.parse(localStorage.getItem("ffmpegWeb-LastMetadataEditOptions") ?? "{}");
     MetadataOptions = UpdateJsonProperties(json, MetadataOptions);
 }
-window.addEventListener("beforeunload", () => localStorage.getItem("ffmpegWeb-SavePreferences") !== "a" && localStorage.setItem(`ffmpegWeb-LastMetadataEditOptions`, JSON.stringify({ ...MetadataOptions, customAlbumArt: false, metadataAdded: [] })))
+MetadataOptions = UpdateStorage(MetadataOptions, "ffmpegWeb-LastMetadataEditOptions");
 export default MetadataOptions;

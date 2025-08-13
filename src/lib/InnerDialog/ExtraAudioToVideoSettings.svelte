@@ -131,6 +131,15 @@
             }}
             checked={ConversionOptions.audioToVideo.disable011}
         ></Switch><br />
+                <Switch
+            text={getLang(
+                "Use single-threaded version of FFmpeg WebAssembly if available (only for this section)",
+            )}
+            on:change={({ detail }) => {
+                ConversionOptions.audioToVideo.useSingleThreadedIfAvailable = detail;
+            }}
+            checked={ConversionOptions.audioToVideo.useSingleThreadedIfAvailable}
+        ></Switch><br />
         <Switch
             text={getLang(
                 "Get loop from audio duration. Disable it if you're having issues with the length of the file.",

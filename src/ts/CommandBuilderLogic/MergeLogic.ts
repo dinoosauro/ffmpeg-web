@@ -26,7 +26,7 @@ export default async function MergeLogic(files: File[], handle?: FileSystemDirec
         val[obj.operationId] = [1, 1, MergeOptions.fileName];
         return [...val];
     })
-    obj.writeFile(new File([files.map(e => `file '${FFmpegFileNameHandler(e).replace(/\'/g, "'\\''")}'`).join("\n")], "__FfmpegWebExclusive__Merge.txt"), true); // Create the txt file with all the file names to join
+    obj.writeFile(new File([files.map(e => `file '${Settings.enableWorkerFS && Settings.version === "0.12.x" ? "mount/" : ""}${FFmpegFileNameHandler(e).replace(/\'/g, "'\\''")}'`).join("\n")], "__FfmpegWebExclusive__Merge.txt"), true); // Create the txt file with all the file names to join
     const merge = new FfmpegHandler(obj, { albumArtReEncode: MergeOptions.keepAlbumArt, suggestedFileExtension: MergeOptions.fileName.substring(MergeOptions.fileName.lastIndexOf(".") + 1) });
     merge.addFiles(files);
     const fileSave = new FileSaver(Settings.storageMethod, handle);

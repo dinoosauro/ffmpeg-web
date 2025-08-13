@@ -1,3 +1,4 @@
+import UpdateStorage from "../Storage/UpdateStorage";
 import UpdateJsonProperties from "../UpdateJSONProperties";
 import Settings from "./Settings";
 
@@ -9,5 +10,5 @@ if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {
     const json = JSON.parse(localStorage.getItem("ffmpegWeb-LastMergeSettings") ?? "{}");
     MergeOptions = UpdateJsonProperties(json, MergeOptions);
 }
-window.addEventListener("beforeunload", () => localStorage.getItem("ffmpegWeb-SavePreferences") !== "a" && localStorage.setItem(`ffmpegWeb-LastMergeSettings`, JSON.stringify(MergeOptions)));
+MergeOptions = UpdateStorage(MergeOptions, "ffmpegWeb-LastMergeSettings");
 export default MergeOptions;

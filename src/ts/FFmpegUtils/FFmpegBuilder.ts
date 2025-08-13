@@ -6,6 +6,7 @@ import FfmpegCommonOperations from "./FFmpegLoadWrite";
 import { conversionFailedDate } from "../Writables";
 import Settings from "../TabOptions/Settings";
 import { get } from "svelte/store";
+import FileSaver from "../SaveFile";
 
 interface OperationProps {
     file: Uint8Array | string,
@@ -36,7 +37,7 @@ interface FilterElaboration {
 export default class FfmpegHandler {
     #conversion = ConversionOptions;
     constructor(ffmpeg: ffmpeg, options?: CustomOptions) {
-        this.#conversion = { ...ConversionOptions }; // Copy conversion preferences so that, even if they are modified by the user later, the conversion will be done with the same arguments
+        this.#conversion = JSON.parse(JSON.stringify(ConversionOptions)); // Copy conversion preferences so that, even if they are modified by the user later, the conversion will be done with the same arguments. We have to convert it to JSON since `structuredClone` doesn't work on proxies.
         if (options?.disableCut) this.#conversion.trimOptions.id = 0;
         this.ffmpeg = ffmpeg;
         this.flags = options ?? {};
@@ -77,14 +78,19 @@ export default class FfmpegHandler {
         /**
          * The string[] with each file to split
          */
-        const textSplit = this.#conversion.trimOptions.multipleTimestamps.text.split("\n");
-        const [first, second] = textSplit[this.#multipleTimestampsDone].split(this.#conversion.trimOptions.multipleTimestamps.divider);
-        let [third, fourth] = ["", ""];
-        if (textSplit[this.#multipleTimestampsDone + 1]) [third, fourth] = textSplit[this.#multipleTimestampsDone + 1].split(this.#conversion.trimOptions.multipleTimestamps.divider); // This might also be undefined if it's the last item to be converted
+        const textSplit = this.#conversion.trimOptions.multipleTimestamps.text.split("\n").filter(i => i.split(this.#conversion.trimOptions.multipleTimestamps.divider).length > 1); // Keep only the lines that can be divided
+        if (textSplit.length === 0) return;
+        const currentItem = textSplit[this.#multipleTimestampsDone].split(this.#conversion.trimOptions.multipleTimestamps.divider);
+        const timestamp = this.#conversion.trimOptions.multipleTimestamps.timestampAtLeft ? currentItem.shift() : currentItem.pop()
+        let nextTimestamp = ""; // Now we'll look if we can find the next timestamp. Otherwise, we'll leave this value blank.
+        if (textSplit[this.#multipleTimestampsDone + 1]) {
+            const nextItem = textSplit[this.#multipleTimestampsDone + 1].split(this.#conversion.trimOptions.multipleTimestamps.divider);
+            nextTimestamp = (this.#conversion.trimOptions.multipleTimestamps.timestampAtLeft ? nextItem.shift() : nextItem.pop()) ?? "00:00";
+        }
         return {
-            suggestedFileName: this.#conversion.trimOptions.multipleTimestamps.timestampAtLeft ? second : first,
-            start: this.#conversion.trimOptions.multipleTimestamps.timestampAtLeft ? first : second,
-            to: this.#conversion.trimOptions.multipleTimestamps.timestampAtLeft ? third : fourth
+            suggestedFileName: new FileSaver().sanitize(currentItem.join(this.#conversion.trimOptions.multipleTimestamps.divider).trim()),
+            start: timestamp ?? "00:00",
+            to: nextTimestamp
         }
     }
     /**
@@ -124,6 +130,10 @@ export default class FfmpegHandler {
          * If further timestamps needs to be elaborated, and therefore the build script needs to be run again.
          */
         let necessaryNextBuild = false;
+        /**
+         * A list of the files to delete immediately after the FFmpeg operation, even if multiple timestamps are being elaborated
+         */
+        let filesToDelete: string[] = [];
         if (!skipMultipleFiles) {
             switch (this.#conversion.trimOptions.id) { // "1" for single timestamp, "2" for multiple timestamps
                 case 1: {
@@ -132,10 +142,23 @@ export default class FfmpegHandler {
                 }
                 case 2: {
                     const timestamps = this.#multipleTimestampsHandler();
-                    command.splice(command.lastIndexOf("-i") + 2, 0, `-ss`, timestamps.start, ...(timestamps.to !== "" ? [`-to`, timestamps.to] : []), ...(this.#conversion.trimOptions.multipleTimestamps.smartMetadata ? ["-metadata", `title=${timestamps.suggestedFileName}`, "-metadata", `track=${this.#conversion.trimOptions.multipleTimestamps.startFrom}`] : []));
-                    this.#conversion.trimOptions.multipleTimestamps.smartMetadata && this.#conversion.trimOptions.multipleTimestamps.startFrom++; // Add a number to the track
-                    suggestedFileName = `${timestamps.suggestedFileName}.${outputFileExtension}`; // Get the file name provided when creating multiple timestamps
-                    necessaryNextBuild = timestamps.to !== "";
+                    if (timestamps) {
+                        const metadata = ["-metadata", `title=${timestamps.suggestedFileName}`, "-metadata", `track=${this.#conversion.trimOptions.multipleTimestamps.startFrom}`];
+                        if (this.#conversion.trimOptions.multipleTimestamps.copySources) { // Since FFmpeg seems to be rather slow when re-encoding files with `ss` and/or `to` (maybe it re-encodes even the previous part), we'll create a temp video/audio by copying only the part we need, and later we'll re-encode this new file.
+                            for (let i = 0; i < command.length; i++) {
+                                if (command[i] === "-i") {
+                                    let inputName = `__FfmpegWebExclusive__TimestampGeneration__${command[i + 1]}`;
+                                    await this.ffmpeg.exec(["-i", command[i + 1], "-ss", timestamps.start, ...(timestamps.to !== "" ? ["-to", timestamps.to] : []), "-c", "copy", inputName]); // Create a copy of the file with the timestamps
+                                    filesToDelete.push(inputName);
+                                    command[i + 1] = inputName;
+                                }
+                            }
+                        }
+                        command.splice(command.lastIndexOf("-i") + 2, 0, ...(this.#conversion.trimOptions.multipleTimestamps.copySources ? [] : [`-ss`, timestamps.start, ...(timestamps.to !== "" ? [`-to`, timestamps.to] : [])]), ...(this.#conversion.trimOptions.multipleTimestamps.smartMetadata ? metadata : []));
+                        this.#conversion.trimOptions.multipleTimestamps.smartMetadata && this.#conversion.trimOptions.multipleTimestamps.startFrom++; // Add a number to the track
+                        suggestedFileName = `${timestamps.suggestedFileName}.${outputFileExtension}`; // Get the file name provided when creating multiple timestamps
+                        necessaryNextBuild = timestamps.to !== "";
+                    }
                     break;
                 }
             }
@@ -147,6 +170,7 @@ export default class FfmpegHandler {
          */
         let suggestedFileRead = "0";
         await this.ffmpeg.exec(command);
+        for (const deleteFile of filesToDelete) await this.ffmpeg.removeFile(deleteFile, true);
         if ((!this.flags.addedFromInput && this.flags.albumArtReEncode) || this.flags.albumArtName) {
             const currentFailed = get(conversionFailedDate);
             try {
@@ -175,7 +199,7 @@ export default class FfmpegHandler {
         try {
             for (let i = 0; i < +suggestedFileRead + 1; i++) { // Check each ffmpegWebExlusive file and, if it's not the output file, delete it.
                 const output = `__FfmpegWebExclusive__${i}__${operationUuid}.${i === 1 ? "jpg" : outputFileExtension}`;
-                output !== file && await this.ffmpeg.removeFile(output); // This comparison will be true only if the user is using the Electron version, since otherwise the result will be a Uint8Array. Since the user is using Electron, the file must not be deleted, since it'll be moved in the next step.
+                output !== file && await this.ffmpeg.removeFile(output, true); // This comparison will be true only if the user is using the Electron version, since otherwise the result will be a Uint8Array. Since the user is using Electron, the file must not be deleted, since it'll be moved in the next step.
             }
         } catch (ex) {
             console.warn("Failed FfmpegWebExclusive cleanup");

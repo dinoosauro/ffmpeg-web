@@ -100,7 +100,15 @@
                         />
                     </label>
                 </Card>
-            {/if}
+            {/if}<br>
+            <Switch
+                text={getLang("Speed up multiple timestamp conversion by using a little bit more RAM. Disable if you're facing conversion issues.")}
+                on:change={({ detail }) =>
+                    (ConversionOptions.trimOptions.multipleTimestamps.copySources =
+                        detail)}
+                checked={ConversionOptions.trimOptions.multipleTimestamps
+                    .copySources}
+            ></Switch>
         </Card>
     {/if}
 </Card>

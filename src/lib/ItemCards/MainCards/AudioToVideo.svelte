@@ -35,7 +35,7 @@
         <Card>
             <MediaEncoding isMinimal={true}></MediaEncoding><br />
             <label class="flex hcenter" style="gap: 10px">
-                {getLang("Video bitrate:")}"
+                {getLang("Video bitrate:")}
                 <input
                     type="text"
                     bind:value={ConversionOptions.audioToVideo.videoBitrate}
