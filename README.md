@@ -153,11 +153,11 @@ download the zip file) and then build the image:
 
 `docker build -t ffmpeg-web .`
 
-After this, you can start the container. The exposed parts are "80" for normal
+After this, you can start the container. The exposed parts are "3000" for normal
 HTTP and "443" for HTTPS (see below how to set it up). For example, to open
 ffmpeg-web at `http://localhost:3000`:
 
-`docker run -p 127.0.0.1:3000:80 ffmpeg-web`
+`docker run -p 127.0.0.1:3000:3000 ffmpeg-web`
 
 ### Enable HTTPS:
 
