@@ -452,3 +452,28 @@ a {
 li {
   margin-bottom: 8px;
 }
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 5px;
+  table-layout: fixed;
+}
+
+table tr>* {
+  padding: 10px;
+  border-radius: 8px;
+}
+
+table tr {
+  border-radius: 8px;
+}
+table th {
+  background-color: var(--select);
+}
+
+td {
+  text-align: center;
+  white-space: pre-line;
+  background-color: var(--card);
+}

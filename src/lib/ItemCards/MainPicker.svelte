@@ -19,6 +19,7 @@
     import MediaEncoding from "./MainCards/MediaEncoding.svelte";
     import AudioToVideo from "./MainCards/AudioToVideo.svelte";
     import ExtraAudioToVideoSettings from "../InnerDialog/ExtraAudioToVideoSettings.svelte";
+    import ImageToVideo from "./MainCards/ImageToVideo.svelte";
     const dispatch = createEventDispatcher();
     /**
      * What operation the user wants to do
@@ -50,6 +51,7 @@
                 { display: getLang("Merge content"), id: "Merge" },
                 { display: getLang("Convert to image"), id: "Image" },
                 { display: getLang("Add metadata"), id: "Metadata" },
+                { display: getLang("Image to video"), id: "ImageToVideo"},
                 {
                     display: getLang("Convert music file to video"),
                     id: "AudioToVideo",
@@ -86,6 +88,13 @@
         >
             <ImageConvert></ImageConvert>
         </div>
+    {:else if applicationPart === "ImageToVideo"}
+            <div
+            in:slide={{ duration: 600, delay: 600 }}
+            out:slide={{ duration: 600 }}
+        >
+            <ImageToVideo></ImageToVideo>
+        </div>
     {:else if applicationPart === "Metadata"}
         <div
             in:slide={{ duration: 600, delay: 600 }}
@@ -105,7 +114,7 @@
             ></AudioToVideo><br />
         </div>
     {/if}<br />
-    {#if applicationPart !== "Merge" && applicationPart !== "Image"}
+    {#if applicationPart !== "Merge" && applicationPart !== "Image" && applicationPart !== "ImageToVideo"}
         <TrimContent></TrimContent>
     {/if}
     <br />

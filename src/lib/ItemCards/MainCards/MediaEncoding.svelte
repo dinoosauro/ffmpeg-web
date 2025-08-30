@@ -16,6 +16,7 @@
      * If only the selection should be displayed, without the title
      */
     export let isMinimal = false;
+    export let showOnlyVideo = false;
 </script>
 
 <div in:slide={{ duration: 600, delay: 600 }} out:slide={{ duration: 600 }}>
@@ -43,7 +44,7 @@
 </div>
 {#if ConversionOptions.isVideoSelected || isMinimal}
     <span in:slide={{ duration: 600 }} out:slide={{ duration: 600 }}>
-        <ChipContainer>
+        <ChipContainer type={showOnlyVideo ? 0 : 1}>
             <Chip
                 on:userSelection={({ detail }) => {
                     ConversionOptions.videoTypeSelected = detail;
@@ -70,10 +71,10 @@
         checked={ConversionOptions.isAudioSelected}
         text={getLang("Enable audio source")}
     ></Switch><br>
-{:else}
+{:else if !showOnlyVideo}
     <h4 style="margin-top: 0px">{getLang("Audio codec")}:</h4>
 {/if}
-{#if ConversionOptions.isAudioSelected || isMinimal}
+{#if (ConversionOptions.isAudioSelected || isMinimal) && !showOnlyVideo}
     <span in:slide={{ duration: 600 }} out:slide={{ duration: 600 }}>
         <ChipContainer>
             <Chip

@@ -246,8 +246,8 @@ export default class FfmpegHandler {
      * @param bitrate An object with a `{video: string}` property. By passing it, the video codec won't be added in the hardware acceleration object
      * @returns An object, with the `{beginning: string}` property that contains the parts needed to initialize hardware acceleration on the device (so, they must be added before anything else); and with the `{after: string}` property that contains the custom video quality for the current operation (so, they must be added)
      */
-    hardwareAcceleration = (isImage?: boolean, bitrate?: { video: string }) => {
-        const encoderInfo = EncoderInfo.video.get(this.#conversion.videoTypeSelected);
+    hardwareAcceleration = (isImage?: boolean, bitrate?: { video: string }, customCodec?: string) => {
+        const encoderInfo = EncoderInfo.video.get(customCodec ?? this.#conversion.videoTypeSelected);
         const videoCodec = isImage ? this.#conversion.imageTypeSelected : encoderInfo ? encoderInfo[this.ffmpeg.native ? Settings.hardwareAcceleration.type as "nvidia" : "NoHardwareAcceleration"] ?? this.#conversion.videoTypeSelected : this.#conversion.videoTypeSelected; // Get library for hardware acceleration in case the user is encoding a video
         const currentObject = [];
         !bitrate && currentObject.push("-vcodec", videoCodec.startsWith("!") ? "copy" : videoCodec.replace("libxh264", "libx264"), this.#isImg ? "-q:v" : this.#conversion.videoOptions.useSlider ? "-crf" : "-b:v", this.#isImg ? this.#conversion.imageOptions.value : this.#conversion.videoOptions.useSlider ? this.#NaNPlaceholder(this.#conversion.videoOptions.value) : this.#conversion.videoOptions.value); // Add video codec and quality. In case a quality slider value is added, the input is sanitized.

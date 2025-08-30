@@ -5,7 +5,7 @@
 
 <!--The container for the Chip elements, that permits to have them all on a single row-->
 <Card {type}>
-    <div class="flex chipContainer">
+    <div class={`flex chipContainer${type === 0 ? " autoChip" : ""}`}>
         <slot></slot>
     </div>
 </Card>
@@ -17,3 +17,11 @@
         padding-bottom: 10px;
     }
 </style>
+
+{#if type === 0}
+<style>
+    .autoChip > .chip {
+        background-color: var(--row);
+    }
+</style>
+{/if}

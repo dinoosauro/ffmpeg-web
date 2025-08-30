@@ -579,6 +579,7 @@
                 { display: "Svelte", id: "2016-24 these people" },
                 { display: "context-filter-polyfill", id: "2019 David Enke" },
                 { display: "zip.js", id: "2023, Gildas Lormeau" },
+                {display: "node-mv (Electron version only)", id: "2014 Andrew Kelley"}
             ]}
         ></Chip>
     </ChipContainer><br />

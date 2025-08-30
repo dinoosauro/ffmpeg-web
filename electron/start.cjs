@@ -4,6 +4,7 @@ const { spawn } = require("child_process");
 const path = require("path");
 const { fileURLToPath } = require('url');
 const { rename, rm } = require("fs");
+const mv = require("mv");
 /**
  * The Electron Window
  * @type {BrowserWindow}
@@ -74,7 +75,10 @@ function handleFileStringForOS(str) {
 }
 ipcMain.handle("MoveFile", async (event, { from, to }) => {
     console.log(`Moving file from: ${from} to ${to}`);
-    await new Promise((res) => rename(from, to, () => res()));
+    await new Promise(res => mv(from, to, res, (err) => {
+        console.error(err);
+        res();
+    }));
 });
 ipcMain.handle("ReadFile", async (event, file) => {
     console.log(`Reading: ${file}`);

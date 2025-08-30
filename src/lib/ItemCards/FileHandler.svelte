@@ -17,6 +17,7 @@
     import { GetImage } from "../../ts/ImageHandler";
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import AudioToVideoLogic from "../../ts/CommandBuilderLogic/AudioToVideoLogic";
+    import ImageToVideoDialog from "../InnerDialog/ImageToVideoDialog.svelte";
 
     /**
      * Process files that ends with this string
@@ -54,11 +55,14 @@
                       ? MetadataLogic(arr, directoryHandle)
                       : $applicationSection === "AudioToVideo"
                         ? AudioToVideoLogic(arr, directoryHandle)
+                        : $applicationSection === "ImageToVideo" ?
+                        (showImageToVideoDialog = [arr, directoryHandle])
                         : FileLogic(arr, directoryHandle);
             directoryHandle = undefined;
         };
         input.click();
     }
+    let showImageToVideoDialog: [File[], FileSystemDirectoryHandle?] | undefined;
     let directoryHandle: FileSystemDirectoryHandle | undefined;
     /**
      * Get a Directory Handle using the File System API, that'll be used for saving files.
@@ -196,3 +200,7 @@
         </Card>
     </Card>
 </Card>
+
+{#if showImageToVideoDialog}
+<ImageToVideoDialog handle={showImageToVideoDialog[1]} discardOption={() => (showImageToVideoDialog = undefined)} fetchedFiles={showImageToVideoDialog[0]}></ImageToVideoDialog>
+{/if}
