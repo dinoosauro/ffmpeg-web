@@ -11,6 +11,21 @@
         <AdaptiveAsset asset="icon" width={128}></AdaptiveAsset>
     </div>
     <Card type={1} forceColor={true}>
+        <h3 style="text-align: center;">Version 3.2.0</h3>
+        <Card forceColor={true}>
+            <ul>
+                <li>Added new "Image to video" section
+                    <ul>
+                        <li>It's now possible to merge multiple images into a single video</li>
+                        <li>The user can choose the duration of each image, and the transition between them</li>
+                    </ul>
+                </li>
+                <li>Fixed a bug that didn't permit to move a file to an external drive while using the Electron version</li>
+                <li>Improved styling in certain areas</li>
+            </ul>
+        </Card>
+    </Card><br>
+    <Card type={1} forceColor={true}>
         <h3 style="text-align: center;">Version 3.1.6</h3>
         <Card forceColor={true}>
             <ul>

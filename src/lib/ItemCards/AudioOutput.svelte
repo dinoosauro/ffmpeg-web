@@ -22,9 +22,9 @@
         <h2>{getLang("Audio output:")}</h2>
     </div>
     {#if !$audioBitrateSettings[1]}
-        <Card type={1}>
+        
             <BitrateSelection type="audio"></BitrateSelection>
-        </Card><br />
+        <br />
     {/if}
     <div class="flex hcenter">
         <p>{getLang("Audio channels:")}</p>

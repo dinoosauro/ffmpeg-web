@@ -126,9 +126,12 @@ let ConversionOptions = {
         useSingleThreadedIfAvailable: false
     },
     imageToVideo: {
-        enableTransition: false,
-        fps: 1,
-        videoBitrate: "2500k"
+        fps: 30,
+        force1FpsVideo: false,
+        autoWidth: true,
+        width: 1920,
+        height: 1080,
+        shouldFill: false
     }
 };
 if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {

@@ -51,11 +51,10 @@
             )}
         </h2>
     </div>
-    <Card type={1}>
         <BitrateSelection
             type={$applicationSection === "Image" ? "image" : "video"}
         ></BitrateSelection>
-    </Card><br />
+    <br />
     {#if $applicationSection !== "Image"}
         <Switch
             text={getLang("Keep the same FPS")}

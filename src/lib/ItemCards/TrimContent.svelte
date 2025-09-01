@@ -30,7 +30,7 @@
                     >{getLang("Start:")}
                     <input
                         type="text"
-                        style="width: 100%;"
+                        style="width: 100%; background-color: var(--row)"
                         bind:value={ConversionOptions.trimOptions
                             .singleTimestamp[0]}
                     />
@@ -42,7 +42,7 @@
                     {getLang("End:")}
                     <input
                         type="text"
-                        style="width: 100%;"
+                        style="width: 100%; background-color: var(--row)"
                         bind:value={ConversionOptions.trimOptions
                             .singleTimestamp[1]}
                     />

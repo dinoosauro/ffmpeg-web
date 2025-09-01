@@ -75,6 +75,20 @@ formats. You can also add some filters, the same as video's ones.
 
 **Note:** you can use this tool also to extract a song's album art!
 
+### Merge images in a video
+
+You can merge multiple images in a single video. Choose the video codec and the container, and then the output FPS. If you want, you can also make sure to scale the images to that they fit the output width/height.
+
+![Image to video options](./readme_assets/ffmpegweb-imagetovideooptions.jpg)
+
+After you've chosen some images from the `File selection` tab, a dialog will appear, where you'll see the image preview and the file name. You can move their position, and you can also choose to add a custom transition (but keep in mind that this will greatly increase the time needed to get the output video.)
+
+![Image to video dialog](./readme_assets/ffmpegweb-imagetovideodialog.jpg)
+
+### Convert music file to video
+
+You can convert a music file to a video that contains its album art and all of its metadata written. You can change lots of things, like the font, the FPS, the background image (that defaults to the music's album art), and the content that should be added to the video, by clicking on the `Show advanced settings` button.
+
 ## File selection
 
 At the top right of the page, you can see a "File selection" tab. Before doing

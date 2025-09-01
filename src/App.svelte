@@ -44,6 +44,7 @@
     import UpdateDialog from "./lib/UpdateDialog.svelte";
     import { getLang } from "./ts/LanguageAdapt";
     import Installation from "./lib/ItemCards/Installation.svelte";
+    import ImageToVideoFilters from "./lib/ItemCards/ImageToVideoFilters.svelte";
     onMount(() => {
         // @ts-ignore | Fallback for randomUUID in non-secure contexts. This isn't ideal, since crypto.randomUUID is way better than Math.random(), but, since it's only used for keeping track of Chip IDs, it's fine.
         if (crypto.randomUUID === undefined)
@@ -91,6 +92,9 @@
         {/if}
         {#if showAudio && $applicationSection === "MediaEnc"}
             <AudioOutput></AudioOutput>
+        {/if}
+        {#if $applicationSection === "ImageToVideo"}
+            <ImageToVideoFilters></ImageToVideoFilters>
         {/if}
         {#if $applicationSection === "Metadata"}
             <Metadata></Metadata>

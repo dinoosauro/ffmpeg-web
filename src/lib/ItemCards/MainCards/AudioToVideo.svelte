@@ -55,3 +55,9 @@
         >{getLang("Show advanced settings")}</button
     >
 </Card>
+
+<style>
+    input:not([type=checkbox]) {
+        background-color: var(--row) !important;
+    }
+</style>

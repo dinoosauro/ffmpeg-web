@@ -457,7 +457,6 @@ table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 5px;
-  table-layout: fixed;
 }
 
 table tr>* {

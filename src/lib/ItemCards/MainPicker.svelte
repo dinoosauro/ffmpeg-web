@@ -51,7 +51,7 @@
                 { display: getLang("Merge content"), id: "Merge" },
                 { display: getLang("Convert to image"), id: "Image" },
                 { display: getLang("Add metadata"), id: "Metadata" },
-                { display: getLang("Image to video"), id: "ImageToVideo"},
+                { display: getLang("Merge images in a video"), id: "ImageToVideo"},
                 {
                     display: getLang("Convert music file to video"),
                     id: "AudioToVideo",
@@ -114,7 +114,7 @@
             ></AudioToVideo><br />
         </div>
     {/if}<br />
-    {#if applicationPart !== "Merge" && applicationPart !== "Image" && applicationPart !== "ImageToVideo"}
+    {#if applicationPart !== "Merge" && applicationPart !== "Image" && applicationPart !== "ImageToVideo" && applicationPart !== "AudioToVideo"}
         <TrimContent></TrimContent>
     {/if}
     <br />

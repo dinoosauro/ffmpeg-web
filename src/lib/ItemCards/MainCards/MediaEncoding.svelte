@@ -44,7 +44,7 @@
 </div>
 {#if ConversionOptions.isVideoSelected || isMinimal}
     <span in:slide={{ duration: 600 }} out:slide={{ duration: 600 }}>
-        <ChipContainer type={showOnlyVideo ? 0 : 1}>
+        <ChipContainer type={1}>
             <Chip
                 on:userSelection={({ detail }) => {
                     ConversionOptions.videoTypeSelected = detail;

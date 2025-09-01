@@ -11,10 +11,15 @@
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import { onMount, onDestroy } from "svelte";
     import Settings from "../../ts/TabOptions/Settings";
+    import Card from "../UIElements/Card/Card.svelte";
     /**
      * The bitrate of this _type_ needs to be changed
      */
     export let type: "video" | "audio" | "image";
+    /**
+     * If the BitrateSelection component is embedded in another Card
+     */
+    export let embedded = false;
     /**
      * Update the bitrate value of the provided source
      * @param e the Event where the bitrate value can be obtained
@@ -25,23 +30,31 @@
         ).value;
     }
     let showBufferSize = false;
-    if (type === "video") {
-        // Look if the buffer size input should be shown, and prefer using the slider in that case
-        onMount(() => {
-            const unsubscribe = showBufSize.subscribe((val) => {
+    let unsubscribe: () => void | undefined;
+    onMount(() => {
+            if (type === "video") {
+                // Look if the buffer size input should be shown, and prefer using the slider in that case
+            unsubscribe = showBufSize.subscribe((val) => {
                 showBufferSize = val;
                 if (Settings.hardwareAcceleration.type === "vaapi")
                     ConversionOptions.videoOptions.useSlider = true;
             });
-            onDestroy(unsubscribe);
-        });
-    }
+        }
+    });
+    onDestroy(() => unsubscribe && unsubscribe());
 </script>
+<Card type={1}>
 
+    {#if !embedded}
 <div class="flex hcenter" style="gap: 8px">
     <AdaptiveAsset width={26} asset="sparkle"></AdaptiveAsset>
     <h3>{getLang("Choose bitrate:")}</h3>
 </div>
+{:else}
+<br>
+{/if}
+
+
 {#if type !== "image" && (type !== "audio" || !$audioBitrateSettings[0]) && (type !== "video" || Settings.hardwareAcceleration.type !== "vaapi")}
     <span in:slide={{ duration: 600 }} out:slide={{ duration: 600 }}>
         <Switch
@@ -89,3 +102,4 @@
         >
     {/if}
 {/if}
+</Card>
