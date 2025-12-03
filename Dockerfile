@@ -1,12 +1,12 @@
 # Use a Node.js base image to compile the website
-FROM node:latest as build-stage
+FROM node:latest AS build-stage
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
 RUN node BuildDist.cjs --local
 # Use nginx to serve the compiled website
-FROM nginx:stable-alpine as production-stage
+FROM nginx:stable-alpine AS production-stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 # Copy over the custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
