@@ -287,7 +287,16 @@ let translations = new Map<string, TranslationRequirements>([
     ["Scale images if they have a different aspect ratio. If disabled, black bars will be added to preserve the image.", {it: "Scala le immagini se hanno un aspect ratio differente. Se disabilitato, delle bande nere verranno aggiunte per preservare l'immagine."}],
     ["Merge images in a video", {it: "Unisci immagini in un video"}],
     ["Embed the album art also to the output video", {it: "Incorpora la copertina dell'album anche sul video di destinazione"}],
-    ["If the output file is an MP4 video, add also non-standard metadata", {it: "Se il video di destinazione è un MP4, aggiungi anche i metadati non-standard"}]
+    ["If the output file is an MP4 video, add also non-standard metadata", {it: "Se il video di destinazione è un MP4, aggiungi anche i metadati non-standard"}],
+    ["Operation", {it: "Operazione"}],
+    ["Converting file", {it: "Converto file"}],
+    ["of", {it: "di"}],
+    ["All the files have been converted", {it: "Tutti i file sono stati convertiti"}],
+    ["No conversion has been started yet", {it: "Non è stata ancora avviata nessuna conversione"}],
+    ["Remote control:", {it: "Controllo remoto:"}],
+    ["You can share the conversion progress to a server you control, so that you can control the progress from anywhere. If you want to enable this completely optional feature, write the server URL below.", {it: "Puoi condividere l'andamento della conversione ad un server che controlli. In questo modo, potrai controllare il progresso della conversione da qualsiasi luogo. Se vuoi abilitare questa funzionalità totalmente opzionale, scrivi l'URL del server qui in basso."}],
+    ["Server URL:", {it: "URL del server:"}],
+    ["Click here to download the Python script to self-host the server", {it: "Clicca qui per scaricare lo script Python del server"}]
 ])
 /**
  * Translate a string

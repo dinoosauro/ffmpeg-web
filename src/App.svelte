@@ -11,6 +11,7 @@
     import {
         applicationSection,
         changedFileSave,
+        conversionFileDone,
         currentlyPressedKeys,
         currentStorageMethod,
         showInstallationCard,
@@ -45,6 +46,7 @@
     import { getLang } from "./ts/LanguageAdapt";
     import Installation from "./lib/ItemCards/Installation.svelte";
     import ImageToVideoFilters from "./lib/ItemCards/ImageToVideoFilters.svelte";
+    import type { FFmpegEvent } from "./interfaces/ffmpeg";
     onMount(() => {
         // @ts-ignore | Fallback for randomUUID in non-secure contexts. This isn't ideal, since crypto.randomUUID is way better than Math.random(), but, since it's only used for keeping track of Chip IDs, it's fine.
         if (crypto.randomUUID === undefined)
@@ -62,6 +64,24 @@
     });
     let showSettings = false;
     let wakeLock: WakeLockSentinel | undefined;
+    window.addEventListener("beforeunload", (e) => { // Ask the user if they want to close ffmpeg-web if a conversion is running
+        if (get(conversionFileDone).some(i => i[0] > 0)) {
+            e.preventDefault();
+            e.returnValue = "";
+            return "";
+        }
+    })
+    /**
+     * An unique identifier used so that, if remote mode is enabled, multiple windows of ffmpeg-web will be divided
+     */
+    let uniqueIdForServer = crypto.randomUUID();
+    // @ts-ignore
+    document.addEventListener("consoleUpdate", (value: FFmpegEvent) => {
+        if (Settings.shareProgressUrl) fetch(`${Settings.shareProgressUrl}${Settings.shareProgressUrl.endsWith("/") ? "" : "/"}api/console?text=${encodeURIComponent(value.detail.str)}&progress=${value.detail.progress}&operation=${value.detail.operation}&timestamp=${Date.now()}&id=${encodeURIComponent(uniqueIdForServer)}`);
+    });
+    conversionFileDone.subscribe((value) => {
+        if (Settings.shareProgressUrl) fetch(`${Settings.shareProgressUrl}${Settings.shareProgressUrl.endsWith("/") ? "" : "/"}api/conversion?currentPosition=${encodeURIComponent(JSON.stringify(value.map(i => i[0])))}&maxPosition=${encodeURIComponent(JSON.stringify(value.map(i => i[1])))}&fileNames=${encodeURIComponent(JSON.stringify(value.map(i => i[2])))}&timestamp=${Date.now()}&id=${encodeURIComponent(uniqueIdForServer)}`);
+    })
     showScreensaver.subscribe((val) => {
         for (const item of document.querySelectorAll("video"))
             item[val ? "pause" : "play"](); // Pause the previous videos if the screensaver is enabled

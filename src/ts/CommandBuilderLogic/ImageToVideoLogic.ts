@@ -93,7 +93,7 @@ export default async function ImageToVideoLogic({ files, width, height }: FileSt
         await obj.removeFile(file);
     }
     const file = await obj.readFile(output);
-    file instanceof Uint8Array ? await fileSave.write(file, `${FFmpegFileNameHandler(files[0].file).substring(0, FFmpegFileNameHandler(files[0].file).lastIndexOf("."))}.mp4`) : await fileSave.native(output, `${FFmpegFileNameHandler(files[0].file).substring(0, FFmpegFileNameHandler(files[0].file).lastIndexOf("."))}.mp4`);
+    file instanceof Uint8Array ? await fileSave.write(file, `${FFmpegFileNameHandler(files[0].file).substring(0, FFmpegFileNameHandler(files[0].file).lastIndexOf("."))}.mp4`) : await fileSave.native(output, `${FFmpegFileNameHandler(files[0].file).substring(0, FFmpegFileNameHandler(files[0].file).lastIndexOf("."))}.mp4`, obj.operationId);
     for (const file of files) await obj.removeFile(file.file);
     await obj.removeFile(output, true);
     obj.exit();

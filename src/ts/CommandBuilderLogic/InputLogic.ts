@@ -53,7 +53,7 @@ export default async function InputLogic(generalFiles: File[], handle?: FileSyst
         const logic = new FfmpegHandler(obj, { addedFromInput: true });
         logic.addFiles(files);
         try {
-            for (let { file, suggestedFileName } of await logic.start(getVal)) file instanceof Uint8Array ? await fileSave.write(file, suggestedFileName) : await fileSave.native(file, suggestedFileName, files[0].path);
+            for (let { file, suggestedFileName } of await logic.start(getVal)) file instanceof Uint8Array ? await fileSave.write(file, suggestedFileName) : await fileSave.native(file, suggestedFileName, obj.operationId, files[0].path);
         } catch (ex) {
             console.error(ex);
             break;

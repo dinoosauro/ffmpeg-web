@@ -66,6 +66,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
     }
     const ffmpegOperation = new FfmpegHandler(obj, { addedFromInput: true, disableCut: true });
     for (const singleFile of pickedFiles) {
+        if (singleFile.name.startsWith("._")) continue;
         // @ts-ignore
         document.addEventListener("consoleUpdate", consoleUpdate);
         conversionFileDone.update((val) => { // Update the writable that contains all the information about this conversion with the file progress and its name
@@ -90,8 +91,12 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
         }
         ffmpegOperation.operationComplete();
         if (typeof imageResult === "string") { // FFmpeg native was used, so we need to read the content of the file
-            const img = await obj.readFile(imageResult, true);
-            if (img) imageResult = img;
+            try {
+                const img = await obj.readFile(imageResult, true);
+                if (img) imageResult = img;
+            } catch (ex) {
+                console.warn(ex);
+            }
         }
         /**
          * The container of all the Image Blobs that'll be added in the output video.
@@ -159,7 +164,11 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
                 canvas.toBlob((async (blob) => {
                     if (blob) {
                         objectUrl = URL.createObjectURL(blob);
-                        await obj.removeFile(`__FfmpegWebExclusive__img_${randomImageIdentifier}.png`);
+                        try {
+                            await obj.removeFile(`__FfmpegWebExclusive__img_${randomImageIdentifier}.png`); // Wrapped in a try-catch block since the file might not exist
+                        } catch(ex) {
+                            console.warn(ex);
+                        }
                         await obj.writeFile(new File([blob], `__FfmpegWebExclusive__img_${randomImageIdentifier}.png`));
                     }
                     resolve();
@@ -303,7 +312,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
             /**
              * If the output file is a Uint8Array, the result is from FFmpeg WebAssembly, and it'll be written using standard JavaScript APIs. Otherwise, it's a path for the native FFmpeg process, and it'll be moved using Node's FS API.
              */
-            for (const { file, extension, suggestedFileName } of start) file instanceof Uint8Array ? await fileSave.write(file, multipleTimestamps ? suggestedFileName : `${FFmpegFileNameHandler(singleFile).substring(0, FFmpegFileNameHandler(singleFile).lastIndexOf("."))}.${extension}`) : await fileSave.native(file, multipleTimestamps ? suggestedFileName : `${singleFile.name.substring(0, singleFile.name.lastIndexOf("."))}.${extension}`, singleFile.path);
+            for (const { file, extension, suggestedFileName } of start) file instanceof Uint8Array ? await fileSave.write(file, multipleTimestamps ? suggestedFileName : `${FFmpegFileNameHandler(singleFile).substring(0, FFmpegFileNameHandler(singleFile).lastIndexOf("."))}.${extension}`) : await fileSave.native(file, multipleTimestamps ? suggestedFileName : `${singleFile.name.substring(0, singleFile.name.lastIndexOf("."))}.${extension}`, obj.operationId, singleFile.path);
         } catch (ex) {
             console.error(ex);
             break;
@@ -313,7 +322,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
             if (chosenConversionOptions.saveTemp && FFmpegFileNameHandler(singleFile) !== file && file !== `__FfmpegWebExclusive__run${randomImageIdentifier}.txt`) {
                 const tempFile = await obj.readFile(file);
                 const title = `[${fileSave.sanitize(singleFile.name)}] ${file.replace("__FfmpegWebExclusive__", "").replace(`_${randomImageIdentifier}`, "")}`;
-                tempFile ? await fileSave.write(tempFile, title) : await fileSave.native(file, title, singleFile.path);
+                tempFile ? await fileSave.write(tempFile, title) : await fileSave.native(file, title, obj.operationId, singleFile.path);
             }
             await obj.removeFile(file, true); // And remove the source files from the FS.
         }

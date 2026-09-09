@@ -10,6 +10,21 @@
     <div class="flex hcenter wcenter">
         <AdaptiveAsset asset="icon" width={128}></AdaptiveAsset>
     </div>
+        <Card type={1} forceColor={true}>
+        <h3 style="text-align: center;">Version 3.2.2</h3>
+        <Card forceColor={true}>
+            <ul>
+                <li>ffmpeg-web now asks confirmation if the user tries to close the webpage while a conversion is running</li>
+                <li>ffmpeg-web can now share information about the conversion operations to a server you own, so that you can track the conversion progress on other devices.
+                    <ul>
+                        <li>You'll need to self-host this server and specify the URL from the Settings</li>
+                        <li>You can download the Python script <a href="./progress-server.py" target="_blank" download="progress-server.py">from here</a>, or from the Settings.</li>
+                    </ul>
+                </li>
+                <li>The webpage title is now updated when the user changes the shown operation from the "Current conversion" tab</li>
+            </ul>
+        </Card>
+    </Card><br>
     <Card type={1} forceColor={true}>
         <h3 style="text-align: center;">Version 3.2.1</h3>
         <Card forceColor={true}>

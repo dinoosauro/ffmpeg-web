@@ -14,6 +14,7 @@
     import { GetImage } from "../../ts/ImageHandler";
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import type { FFmpegEvent } from "../../interfaces/ffmpeg";
+    import { get } from "svelte/store";
     /**
      * The progress bar
      */
@@ -32,7 +33,7 @@
         for (let i = 0; i < val; i++) {
             const option = document.createElement("option");
             option.value = i.toString();
-            option.textContent = `Operation ${i}`;
+            option.textContent = `${getLang("Operation")} ${i + 1}`;
             optionSelect.append(option);
         }
         selectChange();
@@ -50,6 +51,21 @@
         (document.getElementById("addContent") as HTMLElement).children.length >
             2000 && document.getElementById("addContent")?.firstChild?.remove(); // Avoid keeping too many paragraphs
     }
+    /**
+     * If the updateTitle event has already been fired. This is kept track so that the "Converting file" label isn't updated with the placeholder conversion options
+     */
+    let firstCallback = true;
+    function updateTitle(update: [number, number, string][]) {
+        document.title =
+            update[+optionSelect.value][0] > 0
+                ? `[${update[+optionSelect.value][0]}/${update[+optionSelect.value][1]}] | ffmpeg-web | ${getLang("Converting file")} ${update[+optionSelect.value][2]}`
+                : `ffmpeg-web`;
+        if (update[+optionSelect.value] && !firstCallback) {        
+            convertText.textContent = update[+optionSelect.value][0] > 0 ? `${getLang("Converting file")} ${update[+optionSelect.value][0]} ${getLang("of")} ${update[+optionSelect.value][1]}` : getLang("All the files have been converted");
+        }
+        firstCallback = false;
+    }
+
     onMount(() => {
         // @ts-ignore – Update the UI when there's something new in the console
         document.addEventListener("consoleUpdate", (value: FFmpegEvent) => {
@@ -60,10 +76,7 @@
             }
         });
         conversionFileDone.subscribe((update) => {
-            document.title =
-                update[+optionSelect.value][0] > 0
-                    ? `[${update[+optionSelect.value][0]}/${update[+optionSelect.value][1]}] | ffmpeg-web | Converting file ${update[+optionSelect.value][2]}`
-                    : `ffmpeg-web`;
+            updateTitle(update);
         });
     });
     /**
@@ -74,7 +87,12 @@
         (document.getElementById("addContent") as HTMLElement).innerHTML = "";
         for (let item of conversionText[+optionSelect.value]) newText(item);
         progress.value = conversionProgress[+optionSelect.value];
+        updateTitle(get(conversionFileDone));
     }
+    /**
+     * The `Converting file *x* of *y*` paragraph
+     */
+    let convertText: HTMLElement; 
 </script>
 
 <Card>
@@ -87,7 +105,8 @@
         on:change={selectChange}
         bind:this={optionSelect}
     >
-    </select><br /><br />
+    </select><br />
+    <p style="text-align: center;" bind:this={convertText}>{getLang("No conversion has been started yet")}.</p>
     <Card type={1}>
         <progress max={1} bind:this={progress}></progress><br /><br />
         <Card>

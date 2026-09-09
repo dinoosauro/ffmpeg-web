@@ -313,6 +313,9 @@ export default class FfmpegHandler {
         let currentObject: string[] = [...hardwareAccelerationOptions.beginning];
         if (this.#files.length === 0) throw new Error("Please set up files using the addFiles function")
         for (let file of this.#files) currentObject.push("-i", FFmpegFileNameHandler(file));
+        // Let's look if there's a text file. If yes, we'll use it as a metadata source
+        const metadataFileIndex = this.#files.findIndex(i => i.type === "text/plain");
+        if (metadataFileIndex !== -1) currentObject.push("-map_metadata", metadataFileIndex.toString());
         if (this.#conversion.isVideoSelected || isImage) { // Video-specific arguments
             currentObject.push(...hardwareAccelerationOptions.after);
             let customFilter = "";

@@ -31,7 +31,7 @@ export default async function MergeLogic(files: File[], handle?: FileSystemDirec
     merge.addFiles(files);
     const fileSave = new FileSaver(Settings.storageMethod, handle);
     await fileSave.promise;
-    for (let { file } of await merge.start(["-f", "concat", "-safe", "0", "-i", "__FfmpegWebExclusive__Merge.txt", "-c", "copy", "-map_metadata", "0", ...(MergeOptions.fileName.endsWith(".m4a") ? ["-vn"] : [])], MergeOptions.fileName)) file instanceof Uint8Array ? await fileSave.write(file, MergeOptions.fileName) : await fileSave.native(file, MergeOptions.fileName, files[0].path);
+    for (let { file } of await merge.start(["-f", "concat", "-safe", "0", "-i", "__FfmpegWebExclusive__Merge.txt", "-c", "copy", "-map_metadata", "0", ...(MergeOptions.fileName.endsWith(".m4a") ? ["-vn"] : [])], MergeOptions.fileName)) file instanceof Uint8Array ? await fileSave.write(file, MergeOptions.fileName) : await fileSave.native(file, MergeOptions.fileName, obj.operationId, files[0].path);
     merge.operationComplete();
     for (let file of files) await obj.removeFile(FFmpegFileNameHandler(file));
     await obj.removeFile("__FfmpegWebExclusive__Merge.txt");

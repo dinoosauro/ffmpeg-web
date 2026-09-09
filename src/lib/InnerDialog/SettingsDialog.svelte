@@ -403,6 +403,18 @@
 </Card><br />
 <Card forceColor={true} type={1}>
     <div class="flex hcenter" style="gap: 8px">
+        <AdaptiveAsset asset="remote" width={26}></AdaptiveAsset>
+        <h3>{getLang("Remote control:")}</h3>
+    </div>
+    <p style="margin-top: 0px;">{getLang("You can share the conversion progress to a server you control, so that you can control the progress from anywhere. If you want to enable this completely optional feature, write the server URL below.")}</p>
+    <label class="flex hcenter" style="gap: 5px">
+        {getLang("Server URL:")}
+        <input type="text" bind:value={Settings.shareProgressUrl}>
+    </label><br>
+    <a href="./progress-server.py" target="_blank" download="progress-server.py">{getLang("Click here to download the Python script to self-host the server")}</a>
+</Card><br>
+<Card forceColor={true} type={1}>
+    <div class="flex hcenter" style="gap: 8px">
         <AdaptiveAsset asset="screenshot" width={26}></AdaptiveAsset>
 
         <h3>{getLang("Screensaver:")}</h3>
@@ -486,7 +498,7 @@
         <option value="it">Italiano (IT)</option>
         <option value="zh">中文 (ZH)</option>
     </select><br><br>
-    <p>This language translation was made made by <a target="_blank" href={languageCredits.get(currentLanguage)?.githubLink ?? languageCredits.get("en").githubLink}>{languageCredits.get(currentLanguage)?.username ?? languageCredits.get("en").username}</a></p>
+    <p>This language translation was made made by <a target="_blank" href={languageCredits.get(currentLanguage)?.githubLink ?? languageCredits.get("en")?.githubLink}>{languageCredits.get(currentLanguage)?.username ?? languageCredits.get("en")?.username}</a></p>
 </Card><br />
 <Card type={1} forceColor={true}>
     <div class="flex hcenter" style="gap: 8px">

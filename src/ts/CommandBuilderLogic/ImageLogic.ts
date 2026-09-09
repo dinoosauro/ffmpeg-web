@@ -33,7 +33,7 @@ export default async function ImageLogic(files: File[], handle?: FileSystemDirec
          * If the output file is a Uint8Array, the result is from FFmpeg WebAssembly, and it'll be written using standard JavaScript APIs. Otherwise, it's a path for the native FFmpeg process, and it'll be moved using Node's FS API.
         */
         try {
-            for (const { file, extension } of await ffmpegOperation.start(build)) file instanceof Uint8Array ? await fileSave.write(file, `${FFmpegFileNameHandler(oldFile).substring(0, FFmpegFileNameHandler(oldFile).lastIndexOf("."))}.${extension}`) : await fileSave.native(file, `${oldFile.name.substring(0, oldFile.name.lastIndexOf("."))}.${extension}`, oldFile.path);
+            for (const { file, extension } of await ffmpegOperation.start(build)) file instanceof Uint8Array ? await fileSave.write(file, `${FFmpegFileNameHandler(oldFile).substring(0, FFmpegFileNameHandler(oldFile).lastIndexOf("."))}.${extension}`) : await fileSave.native(file, `${oldFile.name.substring(0, oldFile.name.lastIndexOf("."))}.${extension}`, obj.operationId, oldFile.path);
         } catch (ex) {
             console.warn(ex);
             break;

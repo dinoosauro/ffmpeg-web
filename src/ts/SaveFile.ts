@@ -257,12 +257,15 @@ export default class FileSaver {
      * @param suggestedName the suggested name to the file
      * @param firstFilePath the path of the first file, that'll be used to get the directory where the file should be copied. If it's not provided, only the `copyFile` path will be used.
      */
-    native = async (copyFile: string, suggestedName: string, firstFilePath?: string) => {
+    native = async (copyFile: string, suggestedName: string, operationId: number, firstFilePath?: string) => {
         if (firstFilePath) {
             if (firstFilePath.indexOf("\\") !== -1) firstFilePath = firstFilePath.substring(0, firstFilePath.lastIndexOf("\\") + 1);
             if (firstFilePath.indexOf("/") !== -1) firstFilePath = firstFilePath.substring(0, firstFilePath.lastIndexOf("/") + 1);
         }
+        // Notify that the file is being moved
+        document.dispatchEvent(new CustomEvent("consoleUpdate", { detail: { str: `Moving file from ${copyFile} to ${firstFilePath ?? ""}${suggestedName}`, operation: operationId, progress: 1 } }));
         await window.nativeOperations.invoke("MoveFile", { from: copyFile, to: `${firstFilePath ?? ""}${suggestedName}` });
+        document.dispatchEvent(new CustomEvent("consoleUpdate", { detail: { str: `File successfully moved`, operation: operationId, progress: 1 } }));
     }
     /**
      * Save the zip file
