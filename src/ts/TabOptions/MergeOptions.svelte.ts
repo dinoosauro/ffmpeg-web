@@ -1,6 +1,6 @@
-import UpdateStorage from "../Storage/UpdateStorage";
 import UpdateJsonProperties from "../UpdateJSONProperties";
-import Settings from "./Settings";
+
+// See the $effects in `App.svelte` for the logic used to save this object in the LocalStorage every time it's changed.
 
 let MergeOptions = {
     fileName: "",
@@ -10,5 +10,5 @@ if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {
     const json = JSON.parse(localStorage.getItem("ffmpegWeb-LastMergeSettings") ?? "{}");
     MergeOptions = UpdateJsonProperties(json, MergeOptions);
 }
-MergeOptions = UpdateStorage(MergeOptions, "ffmpegWeb-LastMergeSettings");
-export default MergeOptions;
+let state = $state(MergeOptions);
+export default state;

@@ -1,28 +1,22 @@
-<script lang="ts">
-    import { createEventDispatcher } from "svelte";
-    /**
+<script lang="ts"> 
+    
+    interface Props {
+        /**
      * The text to show in the Switch
      */
-    export let text: string;
-    /**
+        text: string;
+        /**
      * If the Switch is checked or not
      */
-    export let checked: boolean = false;
-    /**
-     * The dispatcher that will be used when the user changes the selection
-     */
-    const dispatch = createEventDispatcher();
-    /**
-     * Send the on:change event to the main tab
-     * @param e the Event
-     */
-    function manageChange(e: Event) {
-        dispatch("change", (e.target as HTMLInputElement).checked);
+        checked?: boolean;
+        onchange: (val: boolean) => void
     }
+
+    let { text, checked = false, onchange }: Props = $props();
 </script>
 
 <label class="flex hcenter">
-    <input type="checkbox" {checked} on:change={manageChange} />
+    <input type="checkbox" bind:checked={checked} onchange={() => onchange(checked)} />
     {text}
 </label>
 

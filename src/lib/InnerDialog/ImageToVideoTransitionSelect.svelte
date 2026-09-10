@@ -1,29 +1,49 @@
+<!-- @migration-task Error while migrating Svelte code: Can't migrate code with afterUpdate. Please migrate by hand. -->
 
 <script lang="ts">
-    import { afterUpdate, createEventDispatcher } from "svelte";
     import { getLang } from "../../ts/LanguageAdapt";
-    /**
-     * The selected item in the main Select element
-     */
-    export let selectedKey = "none";
-    /**
-     * The specific transition value that should be used for the `xfade` animation
-     */
-    export let selectedValue = "";
-    /**
-     * Transition duration
-     */
-    export let currentDuration = 1;
-    const dispatcher = createEventDispatcher();
     let select: HTMLSelectElement;
-    afterUpdate(() => { // Save the first element of the specific transition Select as the selected one
+    $effect(() => { // Save the first element of the specific transition Select as the selected one
         if (selectedKey !== "none" && selectedValue && select) select.dispatchEvent(new Event("change"));
     })
+
+    let {editCallback, editKeyCallback, editDurationCallback, selectedKey = "none", selectedValue = "", currentDuration = 1}: {
+        /**
+         * Function called when the user changes the animation origin (top, bottom, left, right)
+         * @param str the name of the animation origin
+         */
+        editCallback: (str: string) => void,
+        /**
+         * Function called when the user changes the animation to add to the dialog
+         * @param str the name of the animation
+         */ 
+        editKeyCallback: (str: string) => void, 
+        /**
+         * Function called when the user changes the animation length
+         * @param num the seconds of the animation
+         */
+        editDurationCallback: (num: number) => void,
+        /**
+        * The selected item in the main Select element
+        */
+        selectedKey: string,
+        /**
+         * The specific transition value that should be used for the `xfade` animation
+         */
+        selectedValue: string,
+        /**
+        * Transition duration
+        */
+        currentDuration: number
+    } = $props();
+
+    $effect(() => {
+        editCallback(selectedValue);
+    })
 </script>
-<select on:change={(e) => {
-    selectedKey = e.currentTarget.value;
-    if (selectedKey === "none") dispatcher("edit", "none");
-    dispatcher("editKey", selectedKey);
+<select bind:value={selectedKey} onchange={(e) => {
+    if (selectedKey === "none") editCallback("none");
+    editKeyCallback(selectedKey);
 }}>
     <option value="none">{getLang("None (recommended)")}</option>
     <option value="fade">Fade</option>
@@ -44,10 +64,7 @@
 
 {#if selectedKey !== "none"}
     <br><br>
-    <select bind:this={select} on:change={(e) => {
-        selectedValue = e.currentTarget.value;
-        dispatcher("edit", selectedValue);
-        }}>
+    <select bind:this={select} bind:value={selectedValue}>
         {#if selectedKey === "wipe" || selectedKey === "slide" || selectedKey === "smooth" || selectedKey === "cover" || selectedKey === "reveal"}
             <option value={`${selectedKey}left`}>Right to left</option>
             <option value={`${selectedKey}right`}>Left to right</option>
@@ -102,9 +119,8 @@
         <br><br>
         <a href={`https://trac.ffmpeg.org/wiki/Xfade#:~:text=${selectedValue}`} target="_blank">{getLang("View example")}</a><br><br>
         <label class="flex hcenter" style="gap: 10px">
-            {getLang("Transition duration (in seconds)")}: <input type="number" value={currentDuration} on:change={(e) => {
-                currentDuration = +e.currentTarget.value;
-                dispatcher("editDuration", currentDuration);
+            {getLang("Transition duration (in seconds)")}: <input type="number" bind:value={currentDuration} onchange={(e) => {
+                editDurationCallback(currentDuration);
             }}>
         </label>
     {/if}

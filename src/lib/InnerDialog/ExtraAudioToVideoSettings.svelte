@@ -1,14 +1,18 @@
 <script lang="ts">
     import { getLang } from "../../ts/LanguageAdapt";
-    import ConversionOptions from "../../ts/TabOptions/ConversionOptions";
-    import { albumToVideoBackground } from "../../ts/Writables";
+    import ConversionOptions from "../../ts/TabOptions/ConversionOptions.svelte";
+    import Writables from "../../ts/Writables.svelte"
     import AudioToVideo from "../ItemCards/MainCards/AudioToVideo.svelte";
 
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import Card from "../UIElements/Card/Card.svelte";
     import Dialog from "../UIElements/Dialog.svelte";
     import Switch from "../UIElements/Switch.svelte";
-    export let closeFunction: () => void;
+    interface Props {
+        closeFunction: () => void;
+    }
+
+    let { closeFunction }: Props = $props();
 </script>
 
 <Dialog {closeFunction}>
@@ -38,10 +42,10 @@
             /></label
         ><br />
         <Switch
-            checked={albumToVideoBackground.img !== undefined}
+            checked={Writables.albumToVideoBackground.img !== undefined}
             text={getLang("Use a custom background image")}
-            on:change={({ detail }) => {
-                if (detail) {
+            onchange={enabled => {
+                if (enabled) {
                     const input = Object.assign(
                         document.createElement("input"),
                         {
@@ -51,7 +55,7 @@
                                 if (input.files) {
                                     const image = new Image();
                                     image.onload = () => {
-                                        albumToVideoBackground.img = image;
+                                        Writables.albumToVideoBackground.img = image;
                                     };
                                     image.src = URL.createObjectURL(
                                         input.files[0],
@@ -63,11 +67,11 @@
                     input.click();
                     return;
                 }
-                albumToVideoBackground.img = undefined;
+                Writables.albumToVideoBackground.img = undefined;
             }}
         ></Switch><br />
-        <Switch text={getLang("Embed the album art also to the output video")} checked={ConversionOptions.audioToVideo.addAlbumArtToOutput} on:change={({detail}) => {
-            ConversionOptions.audioToVideo.addAlbumArtToOutput = detail;
+        <Switch text={getLang("Embed the album art also to the output video")} checked={ConversionOptions.audioToVideo.addAlbumArtToOutput} onchange={enabled => {
+            ConversionOptions.audioToVideo.addAlbumArtToOutput = enabled;
         }}></Switch><br>
         <label class="flex hcenter" style="gap: 10px">
             {getLang("Scale")}:
@@ -85,30 +89,30 @@
         <Switch
             text={getLang("Show album art")}
             checked={ConversionOptions.audioToVideo.content.showAlbumArt}
-            on:change={({ detail }) => {
-                ConversionOptions.audioToVideo.content.showAlbumArt = detail;
+            onchange={enabled => {
+                ConversionOptions.audioToVideo.content.showAlbumArt = enabled;
             }}
         ></Switch><br />
         <Switch
             text={getLang("Show essential metadata information")}
-            on:change={({ detail }) => {
-                ConversionOptions.audioToVideo.content.showQuickInfo = detail;
+            onchange={enabled => {
+                ConversionOptions.audioToVideo.content.showQuickInfo = enabled;
             }}
             checked={ConversionOptions.audioToVideo.content.showQuickInfo}
         ></Switch><br />
         <Switch
             text={getLang("Show all metadata information")}
-            on:change={({ detail }) => {
+            onchange={enabled => {
                 ConversionOptions.audioToVideo.content.showMetadataRecap =
-                    detail;
+                    enabled;
             }}
             checked={ConversionOptions.audioToVideo.content.showMetadataRecap}
         ></Switch><br />
         <Switch
             text={getLang("Show the selected custom background image")}
-            on:change={({ detail }) => {
+            onchange={enabled => {
                 ConversionOptions.audioToVideo.content.showImportedImage =
-                    detail;
+                    enabled;
             }}
             checked={ConversionOptions.audioToVideo.content.showImportedImage}
         ></Switch><br />
@@ -120,8 +124,8 @@
         </div>
         <Switch
             text={getLang("Save temporary images on device")}
-            on:change={({ detail }) => {
-                ConversionOptions.audioToVideo.saveTemp = detail;
+            onchange={enabled => {
+                ConversionOptions.audioToVideo.saveTemp = enabled;
             }}
             checked={ConversionOptions.audioToVideo.saveTemp}
         ></Switch><br />
@@ -129,8 +133,8 @@
             text={getLang(
                 "Disable 0.11.x only for this section (it might be unstable)",
             )}
-            on:change={({ detail }) => {
-                ConversionOptions.audioToVideo.disable011 = detail;
+            onchange={enabled => {
+                ConversionOptions.audioToVideo.disable011 = enabled;
             }}
             checked={ConversionOptions.audioToVideo.disable011}
         ></Switch><br />
@@ -138,8 +142,8 @@
             text={getLang(
                 "Use single-threaded version of FFmpeg WebAssembly if available (only for this section)",
             )}
-            on:change={({ detail }) => {
-                ConversionOptions.audioToVideo.useSingleThreadedIfAvailable = detail;
+            onchange={enabled => {
+                ConversionOptions.audioToVideo.useSingleThreadedIfAvailable = enabled;
             }}
             checked={ConversionOptions.audioToVideo.useSingleThreadedIfAvailable}
         ></Switch><br />
@@ -147,8 +151,8 @@
             text={getLang(
                 "Get loop from audio duration. Disable it if you're having issues with the length of the file.",
             )}
-            on:change={({ detail }) => {
-                ConversionOptions.audioToVideo.useDuration = detail;
+            onchange={enabled => {
+                ConversionOptions.audioToVideo.useDuration = enabled;
             }}
             checked={ConversionOptions.audioToVideo.useDuration}
         ></Switch><br />
@@ -156,8 +160,8 @@
             text={getLang(
                 "Set `max_interleave_delta` to 0. This *might* help fixing wrong timestamps in Matroska files.",
             )}
-            on:change={({ detail }) => {
-                ConversionOptions.audioToVideo.useInterleaveDelta = detail;
+            onchange={enabled => {
+                ConversionOptions.audioToVideo.useInterleaveDelta = enabled;
             }}
             checked={ConversionOptions.audioToVideo.useInterleaveDelta}
         ></Switch><br />
@@ -165,11 +169,11 @@
             text={getLang(
                 "Restore presentation timestamps to START. This *might* help fixing wrong timestamps.",
             )}
-            on:change={({ detail }) => {
-                ConversionOptions.audioToVideo.restorePTS = detail;
+            onchange={enabled => {
+                ConversionOptions.audioToVideo.restorePTS = enabled;
             }}
             checked={ConversionOptions.audioToVideo.restorePTS}
         ></Switch><br />
-        <Switch text={getLang("If the output file is an MP4 video, add also non-standard metadata")} on:change={({detail}) => {ConversionOptions.audioToVideo.addNonStandardMp4Tags = detail}} checked={ConversionOptions.audioToVideo.addNonStandardMp4Tags}></Switch><br>
+        <Switch text={getLang("If the output file is an MP4 video, add also non-standard metadata")} onchange={enabled => {ConversionOptions.audioToVideo.addNonStandardMp4Tags = enabled}} checked={ConversionOptions.audioToVideo.addNonStandardMp4Tags}></Switch><br>
     </Card>
 </Dialog>

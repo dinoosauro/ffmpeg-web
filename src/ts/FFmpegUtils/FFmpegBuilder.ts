@@ -1,10 +1,10 @@
-import ConversionOptions from "../TabOptions/ConversionOptions";
+import ConversionOptions from "../TabOptions/ConversionOptions.svelte";
 import EncoderInfo from "../TabOptions/EncoderInfo";
 import ffmpeg from "./FFmpegClass";
 import FFmpegFileNameHandler from "./FFmpegHandleFileName";
 import FfmpegCommonOperations from "./FFmpegLoadWrite";
-import { conversionFailedDate } from "../Writables";
-import Settings from "../TabOptions/Settings";
+import Writables from "../Writables.svelte";
+import Settings from "../TabOptions/Settings.svelte";
 import { get } from "svelte/store";
 import FileSaver from "../SaveFile";
 
@@ -172,12 +172,12 @@ export default class FfmpegHandler {
         await this.ffmpeg.exec(command);
         for (const deleteFile of filesToDelete) await this.ffmpeg.removeFile(deleteFile, true);
         if ((!this.flags.addedFromInput && this.flags.albumArtReEncode) || this.flags.albumArtName) {
-            const currentFailed = get(conversionFailedDate);
+            const currentFailed = Writables.conversionFailedDate;
             try {
                 if (outputFileExtension === "ogg") throw new Error();
                 await this.ffmpeg.exec([`-i`, this.flags.albumArtName ?? FFmpegFileNameHandler(this.#files[0]), `-frames:v`, `1`, `__FfmpegWebExclusive__1__${operationUuid}.jpg`]); // Get album art
                 await this.ffmpeg.exec(["-i", this.flags.albumArtName ? command[command.length - 1] : `__FfmpegWebExclusive__0__${operationUuid}.${outputFileExtension}`, "-i", `__FfmpegWebExclusive__1__${operationUuid}.jpg`, "-map", "0", "-map", "1", "-c", "copy", "-disposition:v:0", "attached_pic", `__FfmpegWebExclusive__2__${operationUuid}.${outputFileExtension}`]); // And add it to the output file
-                if (currentFailed !== get(conversionFailedDate)) throw new Error();
+                if (currentFailed !== Writables.conversionFailedDate) throw new Error();
                 suggestedFileRead = "2";
             } catch (ex) {
                 console.warn("Failed album art extraction!");
@@ -185,9 +185,9 @@ export default class FfmpegHandler {
         }
         if (!this.flags.addedFromInput && this.#conversion.forceCopyMetadata) { // Copy the metadata from the first file to the last one
             try {
-                const currentFailed = get(conversionFailedDate);
+                const currentFailed = Writables.conversionFailedDate;
                 await this.ffmpeg.exec([`-i`, `__FfmpegWebExclusive__${suggestedFileRead}__${operationUuid}.${outputFileExtension}`, `-i`, FFmpegFileNameHandler(this.#files[0]), "-map", "0", "-map_metadata", "1", "-map_metadata", "1:s:0", "-c", "copy", `__FfmpegWebExclusive__3__${operationUuid}.${outputFileExtension}`]);
-                if (currentFailed !== get(conversionFailedDate)) throw new Error();
+                if (currentFailed !== Writables.conversionFailedDate) throw new Error();
                 suggestedFileRead = "3";
             } catch (ex) {
                 console.warn("Failed copying metadata!");
@@ -323,7 +323,10 @@ export default class FfmpegHandler {
                 this.#conversion.videoOptions.aspectRatio.height !== -1 && this.#conversion.videoOptions.aspectRatio.width !== -1 && currentObject.push(`-aspect`, `${this.#conversion.videoOptions.aspectRatio.width}/${this.#conversion.videoOptions.aspectRatio.height}`);
                 this.#conversion.videoOptions.aspectRatio.rotation !== -1 && (customFilter += `,rotate=PI*${this.#conversion.videoOptions.aspectRatio.rotation}:oh=iw:ow=ih`);
             }
-            if (!this.#conversion.videoOptions.fps.keepFps) this.#conversion.videoTypeSelected === "copy" ? currentObject.push(`-itsscale`, (this.#conversion.videoOptions.fps.inputFps / this.#conversion.videoOptions.fps.outputFps).toString()) : (customFilter += `,fps=${this.#conversion.videoOptions.fps.outputFps}`);
+            if (!this.#conversion.videoOptions.fps.keepFps && !isImage) this.#conversion.videoTypeSelected === "copy" ? currentObject.push(`-itsscale`, (this.#conversion.videoOptions.fps.inputFps / this.#conversion.videoOptions.fps.outputFps).toString()) : (customFilter += `,fps=${this.#conversion.videoOptions.fps.outputFps}`);
+            if (isImage && this.#conversion.imageOptions.customFrame.enabled) customFilter += `,select=eq(n\\,${this.#conversion.imageOptions.customFrame.frame - 1})`;
+            if (isImage && this.#conversion.imageOptions.extractOnlyOneFrame) currentObject.push("-vframes", "1")
+
             this.#conversion.videoOptions.pixelSpace.change && this.#conversion.videoOptions.pixelSpace.with !== "" && currentObject.push(`-pix_fmt`, this.#conversion.videoOptions.pixelSpace.with);
             /**
              * All the video filters available in the "Video filters" dialog

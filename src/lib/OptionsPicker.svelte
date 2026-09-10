@@ -1,13 +1,18 @@
 <script lang="ts">
     import type { ChipInterface } from "../interfaces/chip";
-    import InputOptions from "../ts/TabOptions/InputOptions";
-    import Settings from "../ts/TabOptions/Settings";
+    import InputOptions from "../ts/TabOptions/InputOptions.svelte";
+    import Settings from "../ts/TabOptions/Settings.svelte";
     import Chip from "./UIElements/ChipElements/Chip.svelte";
     import ChipContainer from "./UIElements/ChipElements/ChipContainer.svelte";
-    /**
+    
+    interface Props {
+        /**
      * The supported fields for this component.
      */
-    export let arr: "input" | "hw";
+        arr: "input" | "hw";
+    }
+
+    let { arr }: Props = $props();
     /**
      * The text that has been written in the textbox
      */
@@ -25,7 +30,7 @@
             InputOptions.val = [
                 ...Settings.hardwareAcceleration.additionalProps,
                 { id: crypto.randomUUID(), display: writtenText },
-            ];
+            ]
     }
 </script>
 
@@ -34,7 +39,7 @@
         type="text"
         style="background-color: var(--row);"
         bind:value={writtenText}
-        on:keydown={(e) => {
+        onkeydown={(e) => {
             if (e.key === "Tab") {
                 // Setup "Tab" shortcut
                 e.preventDefault();
@@ -42,7 +47,7 @@
             }
         }}
     />
-    <button style="width: fit-content;" on:click={addItem}>Add</button>
+    <button style="width: fit-content;" onclick={addItem}>Add</button>
 </div>
 <br />
 <ChipContainer>
@@ -51,12 +56,12 @@
             ? InputOptions.val
             : Settings.hardwareAcceleration.additionalProps}
         isInputChip={true}
-        on:userSelection={({ detail }) => {
+        onUserSelection={id => {
             const index = (
                 arr === "input"
                     ? InputOptions.val
                     : Settings.hardwareAcceleration.additionalProps
-            ).findIndex((e) => e.id === detail);
+            ).findIndex((e) => e.id === id);
             if (index !== -1) {
                 (arr === "input"
                     ? InputOptions.val

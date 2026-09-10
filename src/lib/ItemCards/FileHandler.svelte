@@ -1,19 +1,15 @@
 <script lang="ts">
-    import ConversionOptions from "../../ts/TabOptions/ConversionOptions";
+    import ConversionOptions from "../../ts/TabOptions/ConversionOptions.svelte";
     import FileLogic from "../../ts/CommandBuilderLogic/FileLogic";
     import InputLogic from "../../ts/CommandBuilderLogic/InputLogic";
     import { getLang } from "../../ts/LanguageAdapt";
-    import {
-        applicationSection,
-        currentConversionValue,
-        currentStorageMethod,
-    } from "../../ts/Writables";
+    import Writables from "../../ts/Writables.svelte";
     import Card from "../UIElements/Card/Card.svelte";
     import Switch from "../UIElements/Switch.svelte";
     import MergeLogic from "../../ts/CommandBuilderLogic/MergeLogic";
     import ImageLogic from "../../ts/CommandBuilderLogic/ImageLogic";
     import MetadataLogic from "../../ts/CommandBuilderLogic/MetadataLogic";
-    import Settings from "../../ts/TabOptions/Settings";
+    import Settings from "../../ts/TabOptions/Settings.svelte";
     import { GetImage } from "../../ts/ImageHandler";
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import AudioToVideoLogic from "../../ts/CommandBuilderLogic/AudioToVideoLogic";
@@ -45,25 +41,25 @@
                         ),
                     ),
                 );
-            $applicationSection === "Custom"
+            Writables.applicationSection === "Custom"
                 ? InputLogic(arr, directoryHandle)
-                : $applicationSection === "Merge"
+                : Writables.applicationSection === "Merge"
                   ? MergeLogic(arr, directoryHandle)
-                  : $applicationSection === "Image"
+                  : Writables.applicationSection === "Image"
                     ? ImageLogic(arr, directoryHandle)
-                    : $applicationSection === "Metadata"
+                    : Writables.applicationSection === "Metadata"
                       ? MetadataLogic(arr, directoryHandle)
-                      : $applicationSection === "AudioToVideo"
+                      : Writables.applicationSection === "AudioToVideo"
                         ? AudioToVideoLogic(arr, directoryHandle)
-                        : $applicationSection === "ImageToVideo" ?
+                        : Writables.applicationSection === "ImageToVideo" ?
                         (showImageToVideoDialog = [arr, directoryHandle])
                         : FileLogic(arr, directoryHandle);
             directoryHandle = undefined;
         };
         input.click();
     }
-    let showImageToVideoDialog: [File[], FileSystemDirectoryHandle?] | undefined;
-    let directoryHandle: FileSystemDirectoryHandle | undefined;
+    let showImageToVideoDialog: [File[], FileSystemDirectoryHandle?] | undefined = $state();
+    let directoryHandle: FileSystemDirectoryHandle | undefined = $state();
     /**
      * Get a Directory Handle using the File System API, that'll be used for saving files.
      */
@@ -93,8 +89,8 @@
         <p>{getLang("Choose how multiple files should be managed:")}</p>
         <select
             bind:value={ConversionOptions.conversionOption}
-            disabled={$applicationSection !== "MediaEnc" &&
-                $applicationSection !== "Custom"}
+            disabled={Writables.applicationSection !== "MediaEnc" &&
+                Writables.applicationSection !== "Custom"}
         >
             <option value={0}>{getLang("Use only the first file")}</option>
             <option value={1}
@@ -114,7 +110,7 @@
                 >{getLang("Execute the same command for each file")}</option
             >
         </select><br /><br />
-        {#if $applicationSection === "Metadata" && (localStorage.getItem("ffmpegWeb-DefaultStorageMethod") === "handle" || typeof window.nativeOperations !== "undefined")}
+        {#if Writables.applicationSection === "Metadata" && (localStorage.getItem("ffmpegWeb-DefaultStorageMethod") === "handle" || typeof window.nativeOperations !== "undefined")}
             <p style="margin-top: 0px;">
                 {getLang(
                     "Note: the selected files will be overwritten. Please make a copy of them before continuing.",
@@ -125,8 +121,8 @@
         <Switch
             text={getLang("Select a folder")}
             checked={ConversionOptions.folderSelect}
-            on:change={({ detail }) =>
-                (ConversionOptions.folderSelect = detail)}
+            onchange={enabled =>
+                (ConversionOptions.folderSelect = enabled)}
         ></Switch><br />
         {#if ConversionOptions.folderSelect}
             <Card>
@@ -144,12 +140,12 @@
             <br />
         {/if}
 
-        {#if $currentStorageMethod === "handle" && !directoryHandle}
-            <button on:click={askHandle}
+        {#if Writables.currentStorageMethod === "handle" && !directoryHandle}
+            <button onclick={askHandle}
                 >{getLang("Choose output directory")}</button
             >
         {:else}
-            <button on:click={(e) => {
+            <button onclick={(e) => {
                 document.body.style.setProperty("--positionX", `${e.clientX}px`);
                 document.body.style.setProperty("--positionY", `${e.clientY}px`);
                 filePicker();

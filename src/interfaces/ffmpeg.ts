@@ -7,7 +7,7 @@ export interface FfmpegConsole {
     operation: number,
     str: string
 }
-interface FfmpegEventDetails extends FfmpegConsole {
+export interface FfmpegEventDetails extends FfmpegConsole {
     progress: number
 }
 export interface FFmpegEvent extends CustomEvent {

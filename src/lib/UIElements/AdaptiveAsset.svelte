@@ -6,10 +6,12 @@
         type AvailableAssets,
     } from "../../ts/ImageHandler";
 
-    export let asset: AvailableAssets;
-    export let width = 32;
-    let image: HTMLImageElement;
-    onMount(() => UpdateImageMap(image, asset));
+    interface Props {
+        asset: AvailableAssets;
+        width?: number;
+    }
+
+    let { asset, width = 32 }: Props = $props();
 </script>
 
-<img {width} height={width} src={GetImage(asset)} bind:this={image} />
+<img {width} height={width} use:UpdateImageMap={asset} alt={asset} src={GetImage(asset)} />

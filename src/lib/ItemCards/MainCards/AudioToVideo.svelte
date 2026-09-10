@@ -1,13 +1,15 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
     import { getLang } from "../../../ts/LanguageAdapt";
-    import ConversionOptions from "../../../ts/TabOptions/ConversionOptions";
-
+    import ConversionOptions from "../../../ts/TabOptions/ConversionOptions.svelte";
     import AdaptiveAsset from "../../UIElements/AdaptiveAsset.svelte";
     import Card from "../../UIElements/Card/Card.svelte";
     import MediaEncoding from "./MediaEncoding.svelte";
     import { slide } from "svelte/transition";
-    export let showExtraDialog: () => void;
+    interface Props {
+        showExtraDialog: () => void;
+    }
+
+    let { showExtraDialog }: Props = $props();
 </script>
 
 <div class="flex hcenter wcenter" style="gap: 10px">
@@ -33,7 +35,7 @@
     </p>
     <div in:slide={{ duration: 600, delay: 600 }} out:slide={{ duration: 600 }}>
         <Card>
-            <MediaEncoding isMinimal={true}></MediaEncoding><br />
+            <MediaEncoding enabledCardCallback={() => {}} isMinimal={true}></MediaEncoding><br />
             <label class="flex hcenter" style="gap: 10px">
                 {getLang("Video bitrate:")}
                 <input
@@ -51,7 +53,7 @@
         </Card>
     </div>
     <br />
-    <button on:click={(e) => {
+    <button onclick={(e) => {
         document.body.style.setProperty("--positionX", `${e.clientX}px`);
         document.body.style.setProperty("--positionY", `${e.clientY}px`);
         showExtraDialog();

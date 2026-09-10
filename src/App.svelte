@@ -5,20 +5,10 @@
     import VideoOutput from "./lib/ItemCards/VideoOutput.svelte";
     import AudioOutput from "./lib/ItemCards/AudioOutput.svelte";
     import FileHandler from "./lib/ItemCards/FileHandler.svelte";
-    import ConversionOptions from "./ts/TabOptions/ConversionOptions";
+    import ConversionOptions from "./ts/TabOptions/ConversionOptions.svelte";
     import ConversionStatus from "./lib/ItemCards/ConversionStatus.svelte";
     import CustomInput from "./lib/ItemCards/MainCards/CustomInput.svelte";
-    import {
-        applicationSection,
-        changedFileSave,
-        conversionFileDone,
-        currentlyPressedKeys,
-        currentStorageMethod,
-        showInstallationCard,
-        showOverwriteDialog,
-        showScreensaver,
-        updateDialogShown,
-    } from "./ts/Writables";
+    import Writables from "./ts/Writables.svelte"
     import { onMount } from "svelte";
     import { scale, slide } from "svelte/transition";
     import Metadata from "./lib/ItemCards/Metadata.svelte";
@@ -27,14 +17,14 @@
     import Card from "./lib/UIElements/Card/Card.svelte";
     import DialogAnimationStart from "./ts/DialogAnimationStart";
     import TopDialog from "./lib/UIElements/TopDialog.svelte";
-    import Settings from "./ts/TabOptions/Settings";
+    import Settings from "./ts/TabOptions/Settings.svelte";
     import ChipContainer from "./lib/UIElements/ChipElements/ChipContainer.svelte";
     import Chip from "./lib/UIElements/ChipElements/Chip.svelte";
     import SettingsDialog from "./lib/InnerDialog/SettingsDialog.svelte";
     import CustomizationHandler from "./ts/Customization/Themes";
     import BackgroundManager from "./ts/Customization/BackgroundType";
-    $: showVideo = ConversionOptions.isVideoSelected;
-    $: showAudio = ConversionOptions.isAudioSelected;
+    let showVideo = $derived(ConversionOptions.isVideoSelected);
+    let showAudio = $derived(ConversionOptions.isAudioSelected);
     import "./ts/Customization/Screensaver";
     import "./ts/Migration";
     import ScreenSaver from "./lib/ScreenSaver.svelte";
@@ -47,6 +37,10 @@
     import Installation from "./lib/ItemCards/Installation.svelte";
     import ImageToVideoFilters from "./lib/ItemCards/ImageToVideoFilters.svelte";
     import type { FFmpegEvent } from "./interfaces/ffmpeg";
+    import InputOptions from "./ts/TabOptions/InputOptions.svelte"
+    import MergeOptions from "./ts/TabOptions/MergeOptions.svelte"
+    import MetadataOptions from "./ts/TabOptions/MetadataOptions.svelte"
+    import ConsoleEvents from "./ts/FFmpegUtils/ConsoleEvents";
     onMount(() => {
         // @ts-ignore | Fallback for randomUUID in non-secure contexts. This isn't ideal, since crypto.randomUUID is way better than Math.random(), but, since it's only used for keeping track of Chip IDs, it's fine.
         if (crypto.randomUUID === undefined)
@@ -57,15 +51,14 @@
         item.name && CustomizationHandler.applyTheme(item.name, item.isDefault);
         if (Settings.backgroundContent.type !== "color")
             new BackgroundManager(document.body).apply();
-        currentlyPressedKeys.subscribe((val) => {
-            if (val.indexOf("meta") !== -1 && val.indexOf("p") !== -1)
-                showSettings = true;
-        });
     });
-    let showSettings = false;
+    $effect(() => {
+        if (Writables.currentlyPressedKeys.indexOf("meta") !== -1 && Writables.currentlyPressedKeys.indexOf("p") !== -1) showSettings = true;
+    })
+    let showSettings = $state(false);
     let wakeLock: WakeLockSentinel | undefined;
     window.addEventListener("beforeunload", (e) => { // Ask the user if they want to close ffmpeg-web if a conversion is running
-        if (get(conversionFileDone).some(i => i[0] > 0)) {
+        if (Writables.conversionFileDone.currentFile.some(i => i > 0)) {
             e.preventDefault();
             e.returnValue = "";
             return "";
@@ -75,56 +68,78 @@
      * An unique identifier used so that, if remote mode is enabled, multiple windows of ffmpeg-web will be divided
      */
     let uniqueIdForServer = crypto.randomUUID();
-    // @ts-ignore
-    document.addEventListener("consoleUpdate", (value: FFmpegEvent) => {
-        if (Settings.shareProgressUrl) fetch(`${Settings.shareProgressUrl}${Settings.shareProgressUrl.endsWith("/") ? "" : "/"}api/console?text=${encodeURIComponent(value.detail.str)}&progress=${value.detail.progress}&operation=${value.detail.operation}&timestamp=${Date.now()}&id=${encodeURIComponent(uniqueIdForServer)}`);
-    });
-    conversionFileDone.subscribe((value) => {
-        if (Settings.shareProgressUrl) fetch(`${Settings.shareProgressUrl}${Settings.shareProgressUrl.endsWith("/") ? "" : "/"}api/conversion?currentPosition=${encodeURIComponent(JSON.stringify(value.map(i => i[0])))}&maxPosition=${encodeURIComponent(JSON.stringify(value.map(i => i[1])))}&fileNames=${encodeURIComponent(JSON.stringify(value.map(i => i[2])))}&timestamp=${Date.now()}&id=${encodeURIComponent(uniqueIdForServer)}`);
-    })
-    showScreensaver.subscribe((val) => {
-        for (const item of document.querySelectorAll("video"))
-            item[val ? "pause" : "play"](); // Pause the previous videos if the screensaver is enabled
-        document.body.style.overflow = val ? "hidden" : "auto";
+    ConsoleEvents.registerConsoleEvent(({str, progress, operation}) => {
         try {
-            !val && FullscreenManager.remove();
-            val
+            if (Settings.shareProgressUrl) fetch(`${Settings.shareProgressUrl}${Settings.shareProgressUrl.endsWith("/") ? "" : "/"}api/console?text=${encodeURIComponent(str)}&progress=${progress}&operation=${operation}&timestamp=${Date.now()}&id=${encodeURIComponent(uniqueIdForServer)}`);
+        } catch(ex) {}
+    })
+    $effect(() => {
+        try {
+            if (Settings.shareProgressUrl) fetch(`${Settings.shareProgressUrl}${Settings.shareProgressUrl.endsWith("/") ? "" : "/"}api/conversion?currentPosition=${encodeURIComponent(JSON.stringify(Writables.conversionFileDone.currentFile))}&maxPosition=${encodeURIComponent(JSON.stringify(Writables.conversionFileDone.maxFiles))}&fileNames=${encodeURIComponent(JSON.stringify(Writables.conversionFileDone.fileNames))}&timestamp=${Date.now()}&id=${encodeURIComponent(uniqueIdForServer)}`);
+        } catch(ex) {}
+    })
+    $effect(() => {
+        for (const item of document.querySelectorAll("video"))
+            item[Writables.screensaverInfo.enabled ? "pause" : "play"](); // Pause the previous videos if the screensaver is enabled
+        document.body.style.overflow = Writables.screensaverInfo.enabled ? "hidden" : "auto";
+        try {
+            !Writables.screensaverInfo.enabled && FullscreenManager.remove();
+            Writables.screensaverInfo.enabled
                 ? navigator.wakeLock.request().then((res) => (wakeLock = res))
                 : wakeLock?.release();
         } catch (ex) {
             console.warn(ex);
         }
-    });
+    })
+    /**
+     * Check if a value is binary data
+     * @param value the value to check
+     */
+    function isBinary(value: any) {
+        return value instanceof ArrayBuffer || ArrayBuffer.isView(value) || (typeof Buffer !== "undefined" && Buffer.isBuffer(value)) || (typeof Blob !== "undefined" && value instanceof Blob) || (typeof File !== "undefined" && value instanceof File);
+    }
+    $effect(() => { // Save elements to LocalStorage
+        localStorage.setItem("ffmpegWeb-LastSettings", JSON.stringify(ConversionOptions, (key, value) => isBinary(value) ? undefined : value));
+    })
+    $effect(() => {
+        localStorage.setItem("ffmpegWeb-LastGeneralSettings", JSON.stringify(Settings, (key, value) => isBinary(value) ? undefined : value));
+    })
+    $effect(() => {
+        localStorage.setItem("ffmpegWeb-LastInputStorage", JSON.stringify(InputOptions, (key, value) => isBinary(value) ? undefined : value));
+    })
+    $effect(() => {
+        localStorage.setItem("ffmpegWeb-LastMergeSettings", JSON.stringify(MergeOptions, (key, value) => isBinary(value) ? undefined : value));
+    })
+    $effect(() => {
+        localStorage.setItem("ffmpegWeb-LastMetadataEditOptions", JSON.stringify(MetadataOptions, (key, value) => isBinary(value) ? undefined : value));
+    })
 </script>
 
 <Header></Header><br />
 <div>
     <CardAdapt>
         <MainPicker
-            on:changedMainTab={({ detail }) => ($applicationSection = detail)}
-            on:enabledCard={({ detail }) =>
-                detail.isVideo
-                    ? (showVideo = detail.result)
-                    : (showAudio = detail.result)}
+            changedMainTabCallback={selectedItem => (Writables.applicationSection = selectedItem)}
+            enabledCardCallback={({isVideo, result}) => isVideo ? (showVideo = result) : (showAudio = result)}
         ></MainPicker>
-        {#if (showVideo && $applicationSection === "MediaEnc") || $applicationSection === "Image"}
+        {#if (showVideo && Writables.applicationSection === "MediaEnc") || Writables.applicationSection === "Image"}
             <VideoOutput></VideoOutput>
         {/if}
-        {#if showAudio && $applicationSection === "MediaEnc"}
+        {#if showAudio && Writables.applicationSection === "MediaEnc"}
             <AudioOutput></AudioOutput>
         {/if}
-        {#if $applicationSection === "ImageToVideo"}
+        {#if Writables.applicationSection === "ImageToVideo"}
             <ImageToVideoFilters></ImageToVideoFilters>
         {/if}
-        {#if $applicationSection === "Metadata"}
+        {#if Writables.applicationSection === "Metadata"}
             <Metadata></Metadata>
         {/if}
         <FileHandler></FileHandler>
         <ConversionStatus></ConversionStatus>
-        {#if $changedFileSave}
+        {#if Writables.changedFileSave}
             <RedownloadFiles></RedownloadFiles>
         {/if}
-        {#if $showInstallationCard}
+        {#if Writables.showInstallationCard}
             <Installation></Installation>
         {/if}
     </CardAdapt>
@@ -132,7 +147,7 @@
 <div
     style="position: absolute; top: 15px; right: 15px"
     class="pointer"
-    on:click={(e) => {
+    onclick={(e) => {
         DialogAnimationStart(e);
         showSettings = true;
     }}
@@ -142,24 +157,24 @@
 
 {#if showSettings}
     <Dialog closeFunction={() => (showSettings = false)}>
-        <SettingsDialog on:close={() => (showSettings = false)}
+        <SettingsDialog closeFn={() => (showSettings = false)}
         ></SettingsDialog>
     </Dialog>
 {/if}
 
-{#if $showOverwriteDialog && typeof window.nativeOperations !== "undefined"}
+{#if Writables.showOverwriteDialog && typeof window.nativeOperations !== "undefined"}
     <div>
         <TopDialog
-            closeDialog={() => ($showOverwriteDialog = undefined)}
+            closeDialog={() => (Writables.showOverwriteDialog = undefined)}
             indefinite={true}
             dialogId="OverwriteFile"
         >
-            <p>{getLang("Found existent file")}: {$showOverwriteDialog}</p>
+            <p>{getLang("Found existent file")}: {Writables.showOverwriteDialog}</p>
             <button
                 style="text-decoration: underline; width: fit-content"
-                on:click={() => {
+                onclick={() => {
                     window.nativeOperations.send("Overwrite");
-                    $showOverwriteDialog = undefined;
+                    Writables.showOverwriteDialog = undefined;
                 }}
             >
                 {getLang("Overwrite")}
@@ -168,6 +183,6 @@
     </div>
 {/if}
 
-{#if $updateDialogShown}
+{#if Writables.updateDialogShown}
     <UpdateDialog></UpdateDialog>
 {/if}

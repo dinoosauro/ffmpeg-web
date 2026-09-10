@@ -1,4 +1,5 @@
-import Settings from "../TabOptions/Settings";
+import { RerenderImageMap } from "../ImageHandler";
+import Settings from "../TabOptions/Settings.svelte";
 
 export default new class {
     /**
@@ -24,6 +25,7 @@ export default new class {
             document.body.style.setProperty("--card0Color", "var(--card)");
             document.body.style.setProperty("--card1Color", "var(--row)");
         }
+        RerenderImageMap();
         this.applyCustomSelect();
     }
     /**

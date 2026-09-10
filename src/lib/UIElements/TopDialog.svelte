@@ -1,22 +1,13 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { fade } from "svelte/transition";
-    import Settings from "../../ts/TabOptions/Settings";
+    import Settings from "../../ts/TabOptions/Settings.svelte";
     import { getLang } from "../../ts/LanguageAdapt";
     import { GetImage } from "../../ts/ImageHandler";
     import AdaptiveAsset from "./AdaptiveAsset.svelte";
-    /**
-     * If the dialog should be shown at the bottom instead of at the top
-     */
-    export let isBottom = false;
-    /**
-     * The function to call to close this dialog
-     */
-    export let closeDialog: () => void;
-    /**
-     * The ID of this dialog, used so that it can be permanently hidden if the user wants to
-     */
-    export let dialogId: string;
+    
+    
+    
     /**
      * The function that'll be change the dialog opacity before closing it.
      */
@@ -24,15 +15,41 @@
         mainDiv.style.opacity = "0";
         setTimeout(closeDialog, 300);
     }
-    /**
+    
+    
+    interface Props {
+        /**
+     * If the dialog should be shown at the bottom instead of at the top
+     */
+        isBottom?: boolean;
+        /**
+     * The function to call to close this dialog
+     */
+        closeDialog: () => void;
+        /**
+     * The ID of this dialog, used so that it can be permanently hidden if the user wants to
+     */
+        dialogId: string;
+        /**
      * If the dialog should be always visible
      */
-    export let indefinite = false;
-    /**
+        indefinite?: boolean;
+        /**
      * The text that should be shown in the TopDialog.
      * Note that this property has been added so that text can be specified progammatically also on normal TypeScript files. On Svelte files, is suggested to use a <p> inner tag.
      */
-    export let alternativeText: string | undefined = undefined;
+        alternativeText?: string | undefined;
+        children?: import('svelte').Snippet;
+    }
+
+    let {
+        isBottom = false,
+        closeDialog,
+        dialogId,
+        indefinite = false,
+        alternativeText = undefined,
+        children
+    }: Props = $props();
     /**
      * The div that'll contain the dialog items
      */
@@ -40,7 +57,7 @@
     /**
      * If the close options should be shown
      */
-    let showDialogClose = false;
+    let showDialogClose = $state(false);
     !indefinite &&
         onMount(() => {
             if (!mainDiv) closeDialog();
@@ -63,13 +80,13 @@
             >
                 <p
                     style="text-decoration: underline;"
-                    on:click={closeDialogReal}
+                    onclick={closeDialogReal}
                 >
                     {getLang("Close")}
                 </p>
                 <p
                     style="text-decoration: underline;"
-                    on:click={() => {
+                    onclick={() => {
                         Settings.alerts.ignored.push(dialogId);
                         closeDialogReal();
                     }}
@@ -85,12 +102,12 @@
                 out:fade={{ duration: 200 }}
             >
                 <AdaptiveAsset asset="alert"></AdaptiveAsset>
-                <slot></slot>
+                {@render children?.()}
                 {#if alternativeText}
                     <p>{alternativeText}</p>
                 {/if}
                 <p
-                    on:click={() => (showDialogClose = true)}
+                    onclick={() => (showDialogClose = true)}
                     style="text-decoration: underline;"
                 >
                     {getLang("Close")}

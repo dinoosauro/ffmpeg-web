@@ -1,20 +1,12 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import {
-        conversionFileDone,
-        conversionProgress,
-        conversionText,
-        currentConversionValue,
-        fileUrls,
-        showScreensaver,
-    } from "../../ts/Writables";
+    import Writables from "../../ts/Writables.svelte";
     import Card from "../UIElements/Card/Card.svelte";
     import ScreenSaver from "../ScreenSaver.svelte";
     import { getLang } from "../../ts/LanguageAdapt";
-    import { GetImage } from "../../ts/ImageHandler";
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
-    import type { FFmpegEvent } from "../../interfaces/ffmpeg";
-    import { get } from "svelte/store";
+    import type { FFmpegEvent, FfmpegEventDetails } from "../../interfaces/ffmpeg";
+    import ConsoleEvents from "../../ts/FFmpegUtils/ConsoleEvents";
     /**
      * The progress bar
      */
@@ -22,23 +14,7 @@
     /**
      * The Select where the user can choose which conversion to follow
      */
-    let optionSelect: HTMLSelectElement;
-    /**
-     * Add the operation _val_ option to the main Select
-     * @param val the maximum number to add in the select
-     */
-    function addItemsToSelect(val: number) {
-        if (!optionSelect) return;
-        optionSelect.innerHTML = "";
-        for (let i = 0; i < val; i++) {
-            const option = document.createElement("option");
-            option.value = i.toString();
-            option.textContent = `${getLang("Operation")} ${i + 1}`;
-            optionSelect.append(option);
-        }
-        selectChange();
-    }
-    currentConversionValue.subscribe(addItemsToSelect); // When a new conversion is created, update the Select possibilities.
+    let selectedOption = $state(0);
     /**
      * Create a new paragraph with the console output
      * @param add the string to add
@@ -51,48 +27,45 @@
         (document.getElementById("addContent") as HTMLElement).children.length >
             2000 && document.getElementById("addContent")?.firstChild?.remove(); // Avoid keeping too many paragraphs
     }
-    /**
-     * If the updateTitle event has already been fired. This is kept track so that the "Converting file" label isn't updated with the placeholder conversion options
-     */
-    let firstCallback = true;
-    function updateTitle(update: [number, number, string][]) {
-        document.title =
-            update[+optionSelect.value][0] > 0
-                ? `[${update[+optionSelect.value][0]}/${update[+optionSelect.value][1]}] | ffmpeg-web | ${getLang("Converting file")} ${update[+optionSelect.value][2]}`
-                : `ffmpeg-web`;
-        if (update[+optionSelect.value] && !firstCallback) {        
-            convertText.textContent = update[+optionSelect.value][0] > 0 ? `${getLang("Converting file")} ${update[+optionSelect.value][0]} ${getLang("of")} ${update[+optionSelect.value][1]}` : getLang("All the files have been converted");
-        }
-        firstCallback = false;
-    }
-
     onMount(() => {
-        // @ts-ignore – Update the UI when there's something new in the console
-        document.addEventListener("consoleUpdate", (value: FFmpegEvent) => {
-            if (+optionSelect.value === value.detail.operation) {
-                newText(value.detail.str);
-                if (!isNaN(value.detail.progress))
-                    progress.value = value.detail.progress;
+        // Update the UI when there's something new in the console
+        ConsoleEvents.registerConsoleEvent((value: FfmpegEventDetails) => {
+            if (selectedOption === value.operation) {
+                newText(value.str);
+                if (!isNaN(value.progress)) {
+                    progress.value = value.progress;
+                }
             }
         });
-        conversionFileDone.subscribe((update) => {
-            updateTitle(update);
-        });
+
+        setInterval(() => {
+            if (!startedOnParagraph) return;
+            startedOnParagraph.textContent = `${getLang("Started at")}: ${new Date(Writables.conversionFileDone.startDate[selectedOption]).toLocaleTimeString()} – ${getLang("Estimated time")}: ${new Date((Date.now() - Writables.conversionFileDone.startDate[selectedOption]) / progress.value).toLocaleTimeString(undefined, {timeZone: "UTC"})}`;
+        }, 500);
     });
+
+    /**
+     * The paragraph where the starting time and the estimate is written
+     */
+    let startedOnParagraph: HTMLElement;
+
+    $effect(() => {
+        document.title =
+            Writables.conversionFileDone.currentFile[selectedOption] > 0
+                ? `[${Writables.conversionFileDone.currentFile[selectedOption]}/${Writables.conversionFileDone.maxFiles[selectedOption]}] | ffmpeg-web | ${getLang("Converting file")} ${Writables.conversionFileDone.fileNames[selectedOption]}`
+                : `ffmpeg-web`;
+    })
     /**
      * Switch from a conversion to another, showing the last lines of text
      */
     function selectChange() {
         if (!document.getElementById("addContent")) return;
         (document.getElementById("addContent") as HTMLElement).innerHTML = "";
-        for (let item of conversionText[+optionSelect.value]) newText(item);
-        progress.value = conversionProgress[+optionSelect.value];
-        updateTitle(get(conversionFileDone));
+        for (let item of Writables.conversionText[selectedOption]) newText(item);
+        progress.value = Writables.conversionProgress[selectedOption];
     }
-    /**
-     * The `Converting file *x* of *y*` paragraph
-     */
-    let convertText: HTMLElement; 
+
+
 </script>
 
 <Card>
@@ -100,15 +73,21 @@
         <AdaptiveAsset asset="streamoutput"></AdaptiveAsset>
         <h2>{getLang("Conversion status:")}</h2>
     </div>
-    <select
-        style="background-color: var(--row);"
-        on:change={selectChange}
-        bind:this={optionSelect}
-    >
+    <select style="background-color: var(--row);" onchange={selectChange} bind:value={selectedOption}>
+        {#each new Array(Writables.currentConversionValue).fill(0).map((a, i) => i) as i}
+            <option value={i}>{getLang("Operation")} {i + 1}</option>
+        {/each}
     </select><br />
-    <p style="text-align: center;" bind:this={convertText}>{getLang("No conversion has been started yet")}.</p>
+    <p style="text-align: center;">
+    {Writables.conversionFileDone.currentFile[selectedOption] > 0 ? `${getLang("Converting file")} ${Writables.conversionFileDone.currentFile[selectedOption]} ${getLang("of")} ${Writables.conversionFileDone.maxFiles[selectedOption]}` : getLang("All the files have been converted")}
+    </p>
     <Card type={1}>
-        <progress max={1} bind:this={progress}></progress><br /><br />
+        <progress max={1} bind:this={progress}></progress><br />
+        {#if Writables.conversionFileDone.currentFile[selectedOption] > 0}
+            <p style="text-align: center;" bind:this={startedOnParagraph}></p>
+        {:else}
+        <br>
+        {/if}
         <Card>
             <div style="overflow: auto; max-height: 30vh" id="addContent">
                 <p>{getLang("You'll see here all the logs made by ffmpeg.")}</p>
@@ -117,6 +96,6 @@
     </Card>
 </Card>
 
-{#if $showScreensaver}
-    <ScreenSaver currentConversion={+optionSelect.value}></ScreenSaver>
+{#if Writables.screensaverInfo.enabled}
+    <ScreenSaver currentConversion={selectedOption}></ScreenSaver>
 {/if}

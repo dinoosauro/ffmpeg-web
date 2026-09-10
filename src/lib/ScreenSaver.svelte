@@ -3,17 +3,13 @@
     import BackgroundManager from "../ts/Customization/BackgroundType";
     import { fade } from "svelte/transition";
     import { cubicInOut } from "svelte/easing";
-    import {
-        conversionFileDone,
-        conversionProgress,
-        conversionText,
-        showScreensaver,
-    } from "../ts/Writables";
+    import Writables from "../ts/Writables.svelte";
     import Card from "./UIElements/Card/Card.svelte";
-    import Settings from "../ts/TabOptions/Settings";
+    import Settings from "../ts/TabOptions/Settings.svelte";
     import FullscreenManager from "../ts/FullscreenManager";
     import { getLang } from "../ts/LanguageAdapt";
-    import type { FFmpegEvent } from "../interfaces/ffmpeg";
+    import type { FFmpegEvent, FfmpegEventDetails } from "../interfaces/ffmpeg";
+    import ConsoleEvents from "../ts/FFmpegUtils/ConsoleEvents";
     /**
      * The div where the Screensaver will be contained
      */
@@ -22,11 +18,11 @@
      * The function that will get the updates from the FFmpeg object
      * @param value the FFmpegEvent
      */
-    function updateProgressItems(value: FFmpegEvent) {
-        if (value.detail.operation === currentConversion) {
-            if (!isNaN(value.detail.progress))
-                progress.value = value.detail.progress;
-            text.textContent = value.detail.str;
+    function updateProgressItems(value: FfmpegEventDetails) {
+        if (value.operation === currentConversion) {
+            if (!isNaN(value.progress))
+                progress.value = value.progress;
+            text.textContent = value.str;
         }
     }
     onMount(() => {
@@ -34,8 +30,7 @@
         theme.apply(true);
         if (Settings.screenSaver.options.showConversionStatus) {
             // The user wants to see the conversion status
-            // @ts-ignore
-            document.addEventListener("consoleUpdate", updateProgressItems);
+            ConsoleEvents.registerConsoleEvent(updateProgressItems);
         }
         const interval = setInterval(async () => {
             if (!optionContainer) {
@@ -48,14 +43,22 @@
                 optionContainer.classList.toggle(option); // Switch from top to bottom and viceversa
             optionContainer.style.opacity = "1";
         }, Settings.screenSaver.options.moveContent);
-        Settings.screenSaver.options.fullscreen &&
-            FullscreenManager.apply(backgroundContainer);
+        Settings.screenSaver.options.fullscreen && FullscreenManager.apply(backgroundContainer);
+        const etaInterval = setInterval(() => {
+            if (!startedOnParagraph) return;
+            startedOnParagraph.textContent = `${getLang("Started at")}: ${new Date(Writables.conversionFileDone.startDate[currentConversion]).toLocaleTimeString()} – ${getLang("Estimated time")}: ${new Date((Date.now() - Writables.conversionFileDone.startDate[currentConversion]) / progress.value).toLocaleTimeString(undefined, {timeZone: "UTC"})}`;
+        }, 500);
+        return () => {
+            // Remove the event listener to avoid unnecessary calls (and errors)
+            ConsoleEvents.deleteConsoleEvent(updateProgressItems);
+            clearInterval(etaInterval);
+        }
     });
-    onDestroy(() => {
-        // @ts-ignore – Remove the event listener to avoid unnecessary calls (and errors)
-        document.removeEventListener("consoleUpdate", updateProgressItems);
-    });
-    export let currentConversion = 0;
+    interface Props {
+        currentConversion?: number;
+    }
+
+    let { currentConversion = 0 }: Props = $props();
     /**
      * The HTMLProgress element for the current conversion progress
      */
@@ -65,14 +68,19 @@
      */
     let text: HTMLParagraphElement;
     let optionContainer: HTMLDivElement;
+
+    /**
+     * The paragraph where the starting time and the estimate is written
+     */
+    let startedOnParagraph: HTMLElement;
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
     bind:this={backgroundContainer}
     in:fade={{ duration: 400, easing: cubicInOut }}
-    on:click={() => showScreensaver.set(false)}
+    onclick={() => (Writables.screensaverInfo.enabled = false)}
     out:fade={{ duration: 400, easing: cubicInOut }}
     class="screenSaver"
 >
@@ -83,20 +91,20 @@
     >
         {#if Settings.screenSaver.options.showConversionName}
             <div class="screenContainer floatLeft">
-                {#if $conversionFileDone[currentConversion][0] === 0}
+                {#if Writables.conversionFileDone.currentFile[currentConversion] === 0}
                     <h1>{getLang("No conversion started")}</h1>
-                {:else if $conversionFileDone[currentConversion][0] === -1}
+                {:else if Writables.conversionFileDone.currentFile[currentConversion] === -1}
                     <h1>
                         {getLang("The selected conversion (Conversion")}
-                        {currentConversion})
+                        {currentConversion + 1})
                         {getLang("has ended!")}
                     </h1>
                 {:else}
                     <h1>{getLang("Converting file:")}</h1>
-                    <h2>«{$conversionFileDone[currentConversion][2]}»</h2>
+                    <h2>«{Writables.conversionFileDone.fileNames[currentConversion]}»</h2>
                     <progress
-                        value={$conversionFileDone[currentConversion][0] - 1}
-                        max={$conversionFileDone[currentConversion][1]}
+                        value={Writables.conversionFileDone.currentFile[currentConversion] - 1}
+                        max={Writables.conversionFileDone.maxFiles[currentConversion]}
                     ></progress>
                 {/if}
             </div>
@@ -111,7 +119,12 @@
                         style="background-color: var(--row);"
                         bind:this={progress}
                         max={1}
-                    ></progress><br /><br />
+                    ></progress><br />
+                    {#if Settings.screenSaver.options.showEstimate}
+                        <p style="text-align: center;" bind:this={startedOnParagraph}></p>
+                    {:else}
+                    <br>
+                    {/if}
                     <Card type={1}>
                         <p bind:this={text}>
                             {getLang("Conversion text will appear here")}

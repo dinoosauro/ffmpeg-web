@@ -3,11 +3,10 @@
     import { getLang } from "../..//ts/LanguageAdapt";
     import Chip from "../UIElements/ChipElements/Chip.svelte";
     import ChipContainer from "../UIElements/ChipElements/ChipContainer.svelte";
-    import { createEventDispatcher } from "svelte";
     import Switch from "../UIElements/Switch.svelte";
     import EncoderInfo from "../../ts/TabOptions/EncoderInfo";
-    import ConversionOptions from "../../ts/TabOptions/ConversionOptions";
-    import { audioBitrateSettings, reEncodeVideo } from "../../ts/Writables";
+    import ConversionOptions from "../../ts/TabOptions/ConversionOptions.svelte";
+    import Writables from "../../ts/Writables.svelte";
     import CustomInput from "./MainCards/CustomInput.svelte";
     import FileMerge from "./MainCards/FileMerge.svelte";
     import ImageConvert from "./MainCards/ImageConvert.svelte";
@@ -20,20 +19,31 @@
     import AudioToVideo from "./MainCards/AudioToVideo.svelte";
     import ExtraAudioToVideoSettings from "../InnerDialog/ExtraAudioToVideoSettings.svelte";
     import ImageToVideo from "./MainCards/ImageToVideo.svelte";
-    const dispatch = createEventDispatcher();
     /**
      * What operation the user wants to do
      */
-    let applicationPart = "MediaEnc";
-    $: {
+    let applicationPart = $state("MediaEnc");
+    $effect.pre(() => {
         if (applicationPart === "Merge" || applicationPart === "Image")
             ConversionOptions.trimOptions.id = 0;
-    }
+    });
     /**
      * If set to true, the Audio to Video dialog must be shown.
      * This is done here (and not on the AudioToVideo Svelte component) to avoid render issues
      */
-    let showCustomAudioToVideo = false;
+    let showCustomAudioToVideo = $state(false);
+
+    const {enabledCardCallback, changedMainTabCallback}: {
+        /**
+         * Function called when the user toggles audio or video encoding
+         */
+        enabledCardCallback: ({isVideo, result}: {isVideo: boolean, result: boolean}) => void,
+        /**
+         * Function called when the user changes the main tab to display
+         * @param selectedItem the ID of the tab to display
+         */
+        changedMainTabCallback: (selectedItem: string) => void
+    } = $props();
 </script>
 
 <Card>
@@ -57,16 +67,14 @@
                     id: "AudioToVideo",
                 },
             ]}
-            on:userSelection={({ detail }) => {
-                applicationPart = detail;
-                dispatch("changedMainTab", detail);
+            onUserSelection={enabled => {
+                applicationPart = enabled;
+                changedMainTabCallback(enabled);
             }}
         ></Chip>
     </ChipContainer>
     {#if applicationPart === "MediaEnc"}
-        <MediaEncoding
-            on:enabledCard={({ detail }) => dispatch("enabledCard", detail)}
-        ></MediaEncoding><br />
+        <MediaEncoding {enabledCardCallback}></MediaEncoding><br />
     {:else if applicationPart === "Custom"}
         <div
             in:slide={{ duration: 600, delay: 600 }}

@@ -1,7 +1,7 @@
 <script lang="ts">
-    import ConversionOptions from "../../ts/TabOptions/ConversionOptions";
+    import ConversionOptions from "../../ts/TabOptions/ConversionOptions.svelte";
     import { getLang } from "../../ts/LanguageAdapt";
-    import { applicationSection, reEncodeVideo } from "../../ts/Writables";
+    import Writables from "../../ts/Writables.svelte";
     import Card from "../UIElements/Card/Card.svelte";
     import Switch from "../UIElements/Switch.svelte";
     import BitrateSelection from "./BitrateSelection.svelte";
@@ -13,7 +13,7 @@
     /**
      * If the dialog where the user can edit video filters should be shown
      */
-    let showFilterDialog = false;
+    let showFilterDialog = $state(false);
     /**
      * If the user has edited the pixel space settings.
      * This is recorded since, if the user wants to apply some video filters, the pixel space must be changed.
@@ -24,10 +24,7 @@
      * @param e the Event of the Select element
      */
     function enableVideoFilter(e: Event) {
-        if (
-            !userSuggestedPixelSpace &&
-            (e.target as HTMLSelectElement).value !== "none"
-        )
+        if (!userSuggestedPixelSpace && (e.target as HTMLSelectElement).value !== "none")
             // The user has selected a video filter, and the color space must be changed to avoid OOM
             ConversionOptions.videoOptions.pixelSpace = {
                 change: true,
@@ -44,34 +41,49 @@
 
 <Card>
     <div class="flex hcenter wcenter" style="gap: 10px">
-        <AdaptiveAsset asset="video"></AdaptiveAsset>
+        <AdaptiveAsset asset={Writables.applicationSection === "Image" ? "imagestyleguide" : "video"}></AdaptiveAsset>
         <h2>
             {getLang(
-                `${$applicationSection === "Image" ? "Image" : "Video"} output:`,
+                `${Writables.applicationSection === "Image" ? "Image" : "Video"} output:`,
             )}
         </h2>
     </div>
         <BitrateSelection
-            type={$applicationSection === "Image" ? "image" : "video"}
+            type={Writables.applicationSection === "Image" ? "image" : "video"}
         ></BitrateSelection>
     <br />
-    {#if $applicationSection !== "Image"}
+    {#if Writables.applicationSection !== "Image"}
         <Switch
             text={getLang("Keep the same FPS")}
             checked={ConversionOptions.videoOptions.fps.keepFps}
-            on:change={({ detail }) =>
-                (ConversionOptions.videoOptions.fps.keepFps = detail)}
+            onchange={enabled =>
+                (ConversionOptions.videoOptions.fps.keepFps = enabled)}
         ></Switch>
         <br />
     {/if}
-    {#if !ConversionOptions.videoOptions.fps.keepFps}
+    {#if Writables.applicationSection === "Image"}
+    <Switch text={getLang("Extract a specific frame from the video")} checked={ConversionOptions.imageOptions.customFrame.enabled} onchange={enabled => (ConversionOptions.imageOptions.customFrame.enabled = enabled)}></Switch><br>
+        {#if ConversionOptions.imageOptions.customFrame.enabled}
+        <Card type={1}>
+            <div class="flex hcenter" style="gap: 8px">
+                <AdaptiveAsset asset="tableimage" width={26}></AdaptiveAsset>
+                <h3>{getLang("Frame extraction:")}</h3>
+            </div>
+            <label class="flex hcenter divide">
+                {getLang("Extract this frame")}: <input type="number" bind:value={ConversionOptions.imageOptions.customFrame.frame} min="1">
+            </label>
+        </Card><br>
+        {/if}
+        <Switch text={getLang("Extract only one frame")} checked={ConversionOptions.imageOptions.extractOnlyOneFrame} onchange={(enabled) => (ConversionOptions.imageOptions.extractOnlyOneFrame = enabled)}></Switch><br>
+    {/if}
+    {#if !ConversionOptions.videoOptions.fps.keepFps && Writables.applicationSection !== "Image"}
         <Card type={1}>
             <div class="flex hcenter" style="gap: 8px">
                 <AdaptiveAsset asset="fps60" width={26}></AdaptiveAsset>
                 <h3>{getLang("FPS Options:")}</h3>
             </div>
             <div class="flex hcenter divide">
-                {#if $reEncodeVideo}
+                {#if Writables.reEncodeVideo}
                     <label
                         >{getLang("Input FPS:")}
                         <input
@@ -94,8 +106,8 @@
     {/if}
     <Switch
         text={getLang("Change aspect ratio and rotation settings")}
-        on:change={({ detail }) =>
-            (ConversionOptions.videoOptions.aspectRatio.isBeingEdited = detail)}
+        onchange={enabled =>
+            (ConversionOptions.videoOptions.aspectRatio.isBeingEdited = enabled)}
         checked={ConversionOptions.videoOptions.aspectRatio.isBeingEdited}
     ></Switch>
     {#if ConversionOptions.videoOptions.aspectRatio.isBeingEdited}
@@ -147,9 +159,9 @@
     <Switch
         text={getLang("Change pixel format:")}
         checked={ConversionOptions.videoOptions.pixelSpace.change}
-        on:change={({ detail }) => {
-            ConversionOptions.videoOptions.pixelSpace.change = detail;
-            userSuggestedPixelSpace = detail;
+        onchange={enabled => {
+            ConversionOptions.videoOptions.pixelSpace.change = enabled;
+            userSuggestedPixelSpace = enabled;
         }}
     ></Switch>
     {#if ConversionOptions.videoOptions.pixelSpace.change}
@@ -174,7 +186,7 @@
         </Card>
     {/if}
     <br /><br /><button
-        on:click={(e) => {
+        onclick={(e) => {
             DialogAnimationStart(e);
             showFilterDialog = true;
         }}>{getLang("Add video filters")}</button
@@ -239,9 +251,9 @@
                 text={getLang("Deinterlace video")}
                 checked={ConversionOptions.videoOptions.extraFilters
                     .deinterlace}
-                on:change={({ detail }) =>
+                onchange={enabled =>
                     (ConversionOptions.videoOptions.extraFilters.deinterlace =
-                        detail)}
+                        enabled)}
             ></Switch>
         </Card><br />
         <Card type={1} forceColor={true}>
@@ -255,7 +267,7 @@
             <select
                 bind:value={ConversionOptions.videoOptions.extraFilters
                     .videoFilter}
-                on:change={(e) => enableVideoFilter(e)}
+                onchange={(e) => enableVideoFilter(e)}
             >
                 <option value="none">None</option>
                 <option value="color_negative">Negative Color</option>

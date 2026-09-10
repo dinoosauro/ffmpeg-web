@@ -4,10 +4,10 @@ import ffmpeg from "../FFmpegUtils/FFmpegClass";
 import FFmpegFileNameHandler from "../FFmpegUtils/FFmpegHandleFileName";
 import { getLang } from "../LanguageAdapt";
 import FileSaver from "../SaveFile";
-import ConversionOptions from "../TabOptions/ConversionOptions";
+import ConversionOptions from "../TabOptions/ConversionOptions.svelte";
 import EncoderInfo from "../TabOptions/EncoderInfo";
-import Settings from "../TabOptions/Settings";
-import { conversionFileDone } from "../Writables";
+import Settings from "../TabOptions/Settings.svelte";
+import Writables from "../Writables.svelte";
 interface FileStorage {
     files: {
         file: File,
@@ -35,7 +35,7 @@ export default async function ImageToVideoLogic({ files, width, height }: FileSt
     const encoderInfo = EncoderInfo.video.get(options.videoTypeSelected);
     const outputCodec = encoderInfo ? encoderInfo[obj.native ? Settings.hardwareAcceleration.type as "nvidia" : "NoHardwareAcceleration"] ?? options.videoTypeSelected : options.videoTypeSelected;
     hwOptions.after.unshift("-b:v", options.videoOptions.value, "-vcodec", outputCodec);
-    CreateTopDialog(`${getLang("Started operation")} ${obj.operationId}! ${getLang(`Change the Operation ID from the "Conversion Status" tab to see the current progress.`)}`, "OperationStarted");
+    CreateTopDialog(`${getLang("Started operation")} ${obj.operationId + 1}! ${getLang(`Change the Operation ID from the "Conversion Status" tab to see the current progress.`)}`, "OperationStarted");
     const fileSave = new FileSaver(Settings.storageMethod, handle);
     await fileSave.promise;
     for (const { file } of files) await obj.writeFile(file);
@@ -90,7 +90,7 @@ export default async function ImageToVideoLogic({ files, width, height }: FileSt
             "-pix_fmt", "yuv420p",
             ...hwOptions.after,
             output]);
-        await obj.removeFile(file);
+         await obj.removeFile(file);
     }
     const file = await obj.readFile(output);
     file instanceof Uint8Array ? await fileSave.write(file, `${FFmpegFileNameHandler(files[0].file).substring(0, FFmpegFileNameHandler(files[0].file).lastIndexOf("."))}.mp4`) : await fileSave.native(output, `${FFmpegFileNameHandler(files[0].file).substring(0, FFmpegFileNameHandler(files[0].file).lastIndexOf("."))}.mp4`, obj.operationId);
@@ -98,10 +98,7 @@ export default async function ImageToVideoLogic({ files, width, height }: FileSt
     await obj.removeFile(output, true);
     obj.exit();
     await fileSave.release();
-    conversionFileDone.update((val) => {
-        val[obj.operationId][0] = -1; // With "-1", the conversion is marked as completed
-        return [...val];
-    })
+    Writables.conversionFileDone.currentFile[obj.operationId] = -1; // With "-1", the conversion is marked as completed
     CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId}`, "OperationCompleted");
 
 }

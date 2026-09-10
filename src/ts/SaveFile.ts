@@ -1,8 +1,9 @@
 import type { IpcRenderer } from "electron/renderer";
 import type JSZip from "jszip";
-import Settings from "./TabOptions/Settings";
-import { fileUrls } from "./Writables";
+import Settings from "./TabOptions/Settings.svelte";
+import Writables from "./Writables.svelte";
 import type { Uint8ArrayReader, BlobReader, ZipWriter, ZipWriterStream } from "@zip.js/zip.js";
+import ConsoleEvents from "./FFmpegUtils/ConsoleEvents";
 
 interface DirectoryPicker {
     id?: string,
@@ -129,7 +130,6 @@ export default class FileSaver {
                                                 const iframe = document.createElement("iframe");
                                                 iframe.src = `${window.location.href}${window.location.href.endsWith("/") ? "" : "/"}downloader?id=${id}`;
                                                 iframe.style = "width: 1px; height: 1px; position: fixed; top: -1px; left: -1px;"
-                                                console.log(iframe);
                                                 document.body.append(iframe);
                                             }
                                             if (!(/^((?!chrome|android).)*safari/i.test(navigator.userAgent))) { // Quick method to detect if Safari is being used. If not, open a pop-up window to download it (since otherwise it would fail).
@@ -202,10 +202,7 @@ export default class FileSaver {
         function downloadLink() {
             const a = document.createElement("a");
             a.href = URL.createObjectURL(file instanceof Blob ? file : new Blob([file] as BlobPart[]));
-            Settings.fileSaver.keepInMemory && fileUrls.update((val) => {
-                val.push({ name, path: a.href });
-                return [...val];
-            })
+            Settings.fileSaver.keepInMemory && Writables.fileUrls.push({ name, path: a.href });
             a.download = name;
             a.click();
             if (Settings.fileSaver.revokeObjectUrl) URL.revokeObjectURL(a.href);
@@ -234,7 +231,6 @@ export default class FileSaver {
             case "zipjs-blob": {
                 if (!this.#zipJs) return;
                 await (this.#zipJs?.ZipObject as ZipWriter<Blob>).add(name, file instanceof Uint8Array ? new this.#zipJs.Uint8ArrayReader(file) : new this.#zipJs.BlobReader(file));
-                console.log("Added!");
                 break;
             }
             case "handle": {
@@ -263,9 +259,9 @@ export default class FileSaver {
             if (firstFilePath.indexOf("/") !== -1) firstFilePath = firstFilePath.substring(0, firstFilePath.lastIndexOf("/") + 1);
         }
         // Notify that the file is being moved
-        document.dispatchEvent(new CustomEvent("consoleUpdate", { detail: { str: `Moving file from ${copyFile} to ${firstFilePath ?? ""}${suggestedName}`, operation: operationId, progress: 1 } }));
+        ConsoleEvents.sendMessage({ str: `Moving file from ${copyFile} to ${firstFilePath ?? ""}${suggestedName}`, operation: operationId, progress: 1 })
         await window.nativeOperations.invoke("MoveFile", { from: copyFile, to: `${firstFilePath ?? ""}${suggestedName}` });
-        document.dispatchEvent(new CustomEvent("consoleUpdate", { detail: { str: `File successfully moved`, operation: operationId, progress: 1 } }));
+        ConsoleEvents.sendMessage({ str: `File successfully moved`, operation: operationId, progress: 1 });
     }
     /**
      * Save the zip file

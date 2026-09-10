@@ -2,11 +2,15 @@
     import BackgroundManager from "../../ts/Customization/BackgroundType";
     import { getLang } from "../../ts/LanguageAdapt";
     import IndexedDatabase from "../../ts/Storage/IndexedDatabase";
-    import Settings from "../../ts/TabOptions/Settings";
+    import Settings from "../../ts/TabOptions/Settings.svelte";
     import Card from "../UIElements/Card/Card.svelte";
     import Switch from "../UIElements/Switch.svelte";
-    export let type: "background" | "screenSaver" = "background";
-    export let destinationContainer = document.body;
+    interface Props {
+        type?: "background" | "screenSaver";
+        destinationContainer?: any;
+    }
+
+    let { type = "background", destinationContainer = document.body }: Props = $props();
     /**
      * The Class that'll manage changing the background item for that part
      */
@@ -22,7 +26,7 @@
         type === "background" ? "backgroundContent" : "screenSaver"
     ].type}
     style="background-color: var(--row);"
-    on:change={() => backgroundChange.apply(type === "screenSaver")}
+    onchange={() => backgroundChange.apply(type === "screenSaver")}
 >
     <option value="color">{getLang("The background color")}</option>
     <option value="image">{getLang("A background image")}</option>
@@ -36,7 +40,7 @@
     <Card forceColor={true} type={1}>
         <div class="flex" style="gap: 10px">
             <button
-                on:click={() => {
+                onclick={() => {
                     const input = document.createElement("input");
                     input.type = "file";
                     input.multiple = true;
@@ -52,7 +56,7 @@
                 }}>{getLang("Add content")}</button
             >
             <button
-                on:click={async () => {
+                onclick={async () => {
                     await IndexedDatabase.remove({
                         db: await IndexedDatabase.db(),
                         query: `${type === "screenSaver" ? "Screensaver" : "Background"}${Settings[`${type === "screenSaver" ? "screenSaver" : "backgroundContent"}`].type === "image" ? "Image" : "Video"}`,
@@ -79,7 +83,7 @@
         <p>{getLang("Write a YouTube Playlist or Video URL:")}</p>
         <input type="text" bind:value={YTUrl} /><br /><br />
         <button
-            on:click={() => {
+            onclick={() => {
                 if (YTUrl === "") return;
                 if (YTUrl.indexOf("&") !== -1)
                     YTUrl = YTUrl.substring(0, YTUrl.indexOf("&"));
@@ -111,7 +115,7 @@
                 ].effects.blur}
                 min="0"
                 max="100"
-                on:change={() =>
+                onchange={() =>
                     type === "background" && backgroundChange.filter()}
             /></label
         ><br />
@@ -121,7 +125,7 @@
                 type="range"
                 min="0"
                 max="400"
-                on:change={() =>
+                onchange={() =>
                     type === "background" && backgroundChange.filter()}
                 bind:value={Settings[
                     type === "background" ? "backgroundContent" : "screenSaver"
@@ -134,9 +138,9 @@
         <Card forceColor={true} type={1}>
             <Switch
                 checked={Settings.backgroundContent.allowCardBlur}
-                on:change={({ detail }) => {
-                    Settings.backgroundContent.allowCardBlur = detail;
-                    backgroundChange.changeCardEffect(!detail);
+                onchange={blurEnabled => {
+                    Settings.backgroundContent.allowCardBlur = blurEnabled;
+                    backgroundChange.changeCardEffect(!blurEnabled);
                 }}
                 text={getLang(
                     "Add blur effect also to cards (experimental; can greatly slow down ffmpeg-web)",

@@ -74,6 +74,8 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(bytes(f"""<!DOCTYPE html>
             <head>
                 <title>Remote ffmpeg-web operation</title>
+                <meta charset="UTF-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 <style>
                 body {{ 
                     padding: 10px;

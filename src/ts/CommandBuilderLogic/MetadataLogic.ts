@@ -4,9 +4,9 @@ import ffmpeg from "../FFmpegUtils/FFmpegClass";
 import FFmpegFileNameHandler from "../FFmpegUtils/FFmpegHandleFileName";
 import { getLang } from "../LanguageAdapt";
 import FileSaver from "../SaveFile";
-import MetadataOptions from "../TabOptions/MetadataOptions";
-import Settings from "../TabOptions/Settings";
-import { conversionFileDone } from "../Writables";
+import MetadataOptions from "../TabOptions/MetadataOptions.svelte";
+import Settings from "../TabOptions/Settings.svelte";
+import Writables from "../Writables.svelte";
 
 /**
  * Add metadata to the provided files
@@ -27,21 +27,24 @@ export default async function MetadataLogic(files: File[], handle?: FileSystemDi
      */
     const obj = new ffmpeg(Settings.version as "0.11.x");
     await obj.promise;
-    CreateTopDialog(`${getLang("Started operation")} ${obj.operationId}! ${getLang(`Change the Operation ID from the "Conversion Status" tab to see the current progress.`)}`, "OperationStarted");
+    CreateTopDialog(`${getLang("Started operation")} ${obj.operationId + 1}! ${getLang(`Change the Operation ID from the "Conversion Status" tab to see the current progress.`)}`, "OperationStarted");
     const fileSave = new FileSaver(Settings.storageMethod, handle);
     await fileSave.promise;
     for (let file of files) {
-        conversionFileDone.update((val) => {
-            if (!val[obj.operationId]) val[obj.operationId] = [0, files.length, ""];
-            val[obj.operationId][0]++;
-            val[obj.operationId][2] = file.name;
-            return [...val];
-        })
+        if (!Writables.conversionFileDone.currentFile[obj.operationId]) { // Initialize the entries
+            Writables.conversionFileDone.currentFile[obj.operationId] = 0;
+            Writables.conversionFileDone.maxFiles[obj.operationId] = files.length;
+            Writables.conversionFileDone.fileNames[obj.operationId] = "";    
+        } 
+        Writables.conversionFileDone.currentFile[obj.operationId]++;
+        Writables.conversionFileDone.fileNames[obj.operationId] = file.name;
+        Writables.conversionFileDone.startDate[obj.operationId] = Date.now();
+
         const handler = new FfmpegHandler(obj, { addedFromInput: true, albumArtName: MetadataOptions.customAlbumArt ? FFmpegFileNameHandler(MetadataOptions.customAlbumArt) : undefined, getNameWithFfmpegHandler: true });
         handler.addFiles([file, ...(MetadataOptions.customAlbumArt ? [MetadataOptions.customAlbumArt] : [])]);
         const extension = file.name.substring(file.name.lastIndexOf(".") + 1);
         try {
-            for (let result of await handler.start([`-i`, FFmpegFileNameHandler(file), `-codec`, `copy`, ...(MetadataOptions.keepCurrentMetadata ? [] : ["-map_metadata", "-1"]), ...(customEnabled && !MetadataOptions.keepMP4Thumbnail && (extension === "alac" || extension === "m4a" || extension === "mp4" || extension === "m4v") ? ["-movflags", "use_metadata_tags"] : []), ...(MetadataOptions.deleteVideo ? [`-vn`] : []), ...getArgs, `__FfmpegWebExclusive__0__$ReplaceWithUUID.${extension}`], FFmpegFileNameHandler(file))) result.file instanceof Uint8Array ? await fileSave.write(result.file, result.suggestedFileName) : await fileSave.native(result.file, result.suggestedFileName, obj.operationId, file.path); // Add $ReplaceWithUUID so that duplicates won't be created in case of multiple timestamps
+            for (let result of await handler.start([`-i`, FFmpegFileNameHandler(file), `-codec`, `copy`, ...(MetadataOptions.keepCurrentMetadata ? [] : ["-map_metadata", "-1"]), ...(customEnabled && !MetadataOptions.keepMP4Thumbnail && (extension === "alac" || extension === "m4a" || extension === "mp4" || extension === "m4v") ? ["-movflags", "use_metadata_tags"] : []), ...(MetadataOptions.deleteVideo ? [`-vn`] : []), ...getArgs, `__FfmpegWebExclusive__0__$ReplaceWithUUID.${extension}`], FFmpegFileNameHandler(file))) result.file instanceof Uint8Array ? await fileSave.write(result.file, result.suggestedFileName) : await fileSave.native(result.file, result.suggestedFileName, obj.operationId, window.nativeOperations.getFilePath(file)); // Add $ReplaceWithUUID so that duplicates won't be created in case of multiple timestamps
         } catch (ex) {
             console.error(ex);
             break;
@@ -52,10 +55,7 @@ export default async function MetadataLogic(files: File[], handle?: FileSystemDi
     }
     await fileSave.release();
     !Settings.exit.afterFile && obj.exit();
-    conversionFileDone.update((val) => {
-        val[obj.operationId][0] = -1;
-        return [...val];
-    })
+    Writables.conversionFileDone.currentFile[obj.operationId] = -1;
     CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId}`, "OperationCompleted");
 
 }

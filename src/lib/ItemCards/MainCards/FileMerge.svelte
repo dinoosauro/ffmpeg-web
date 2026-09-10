@@ -1,7 +1,7 @@
 <script>
     import { GetImage } from "../../../ts/ImageHandler";
     import { getLang } from "../../../ts/LanguageAdapt";
-    import MergeOptions from "../../../ts/TabOptions/MergeOptions";
+    import MergeOptions from "../../../ts/TabOptions/MergeOptions.svelte";
     import AdaptiveAsset from "../../UIElements/AdaptiveAsset.svelte";
     import Switch from "../../UIElements/Switch.svelte";
 </script>
@@ -22,7 +22,7 @@
 /><br /><br />
 <Switch
     checked={MergeOptions.keepAlbumArt}
-    on:change={({ detail }) => (MergeOptions.keepAlbumArt = detail)}
+    onchange={enabled => (MergeOptions.keepAlbumArt = enabled)}
     text={getLang(
         "Keep the album art (or the thumbnail) of the first file. Disable it if there are issues with the conversion.",
     )}

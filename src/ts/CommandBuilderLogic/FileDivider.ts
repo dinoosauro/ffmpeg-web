@@ -1,4 +1,4 @@
-import ConversionOptions from "../TabOptions/ConversionOptions";
+import ConversionOptions from "../TabOptions/ConversionOptions.svelte";
 
 /**
  * Get the files that should be converted, according to the user's preference

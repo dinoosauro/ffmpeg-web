@@ -1,16 +1,28 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
     import CustomizationHandler from "../../ts/Customization/Themes";
     import { GetImage } from "../../ts/ImageHandler";
     import Card from "../UIElements/Card/Card.svelte";
-    /**
-     * The theme name (and, so, the key to the CustomThemes or the StandardThemes object)
-     */
-    export let key: string;
-    /**
-     * If the theme is one of the default ones or not
-     */
-    export let isDefault = false;
+    
+    
+    interface Props {
+        /**
+         * The theme name (and, so, the key to the CustomThemes or the StandardThemes object)
+         */
+        key: string;
+        /**
+         * If the theme is one of the default ones or not
+         */
+        isDefault?: boolean;
+        /**
+         * Function called when the theme has been changed by the user
+         */
+        themeChangedCallback: () => void,
+        /**
+         * Function called when the theme has been deleted by the user
+         */
+        themeDeletedCallback: () => void
+    }
+    let { key, isDefault = false, themeChangedCallback, themeDeletedCallback }: Props = $props();
     /**
      * Get the current theme properties
      */
@@ -19,10 +31,6 @@
             ? CustomizationHandler.standardThemes
             : JSON.parse(localStorage.getItem("ffmpegWeb-CustomThemes") ?? "{}")
     )[key];
-    /**
-     * Create a dispatcher, that'll inform the Settings tab if a theme has been deleted or applied.
-     */
-    const dispatcher = createEventDispatcher();
 </script>
 
 <Card forceColor={true}>
@@ -31,9 +39,9 @@
         <button
             class="circularBtn"
             style={`position: absolute; right: 10px; background-color: ${getThemeProps["--row"]}`}
-            on:click={() => {
+            onclick={() => {
                 CustomizationHandler.applyTheme(key, isDefault);
-                dispatcher("themeChanged");
+                themeChangedCallback();
             }}
         >
             <div class="flex hcenter wcenter">
@@ -48,7 +56,7 @@
         <button
             class="circularBtn"
             style={`position: absolute; right: 44px; background-color: ${getThemeProps["--row"]}`}
-            on:click={() => {
+            onclick={() => {
                 let a = document.createElement("a");
                 a.href = URL.createObjectURL(
                     new Blob([JSON.stringify({ [key]: getThemeProps })]),
@@ -70,7 +78,7 @@
             <button
                 class="circularBtn"
                 style={`position: absolute; right: 78px; background-color: ${getThemeProps["--row"]}`}
-                on:click={() => {
+                onclick={() => {
                     const currentThemes = JSON.parse(
                         localStorage.getItem("ffmpegWeb-CustomThemes") ?? "{}",
                     );
@@ -79,7 +87,7 @@
                         "ffmpegWeb-CustomThemes",
                         JSON.stringify(currentThemes),
                     );
-                    dispatcher("themeDeleted");
+                    themeDeletedCallback();
                 }}
             >
                 <div class="flex hcenter wcenter">

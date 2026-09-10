@@ -1,16 +1,7 @@
 <script lang="ts">
     import CustomizationHandler from "../../ts/Customization/Themes";
-    import Settings from "../../ts/TabOptions/Settings";
-    import {
-        changedFileSave,
-        currentStorageMethod,
-        ffmpegVersionUsed,
-        screensaverActivationTime,
-        showBufSize,
-        showInstallationCard,
-        showScreensaver,
-        updateDialogShown,
-    } from "../../ts/Writables";
+    import Settings from "../../ts/TabOptions/Settings.svelte";
+    import Writables from "../../ts/Writables.svelte";
     import Card from "../UIElements/Card/Card.svelte";
     import Chip from "../UIElements/ChipElements/Chip.svelte";
     import ChipContainer from "../UIElements/ChipElements/ChipContainer.svelte";
@@ -18,23 +9,22 @@
     import Switch from "../UIElements/Switch.svelte";
     import BackgroundContentUI from "./BackgroundContentUI.svelte";
     import BackgroundContentUi from "./BackgroundContentUI.svelte";
-    import { createEventDispatcher } from "svelte";
     import { slide } from "svelte/transition";
     import OptionsPicker from "../OptionsPicker.svelte";
     import { getLang, languageCredits } from "../../ts/LanguageAdapt";
     import { GetImage, RerenderImageMap } from "../../ts/ImageHandler";
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import Themes from "../../ts/Customization/Themes";
-    import ConversionOptions from "../../ts/TabOptions/ConversionOptions";
+     import ConversionOptions from "../../ts/TabOptions/ConversionOptions.svelte";
     /**
      * The CSS property that the user is editing
      */
-    let opacitySelector: HTMLInputElement;
-    let propertyChanged = "--text";
+    let opacitySelector: HTMLInputElement ;
+    let propertyChanged = $state("--text");
     /**
      * The object that contains all the CSS properties to save
      */
-    let currentProperties: any = {};
+    let currentProperties: any = $state({});
     /**
      * An array that contains the CSS key of the values to edit and their description. Follows the same structure as a ChipInterface[] object.
      */
@@ -60,7 +50,7 @@
     /**
      * The name the user wants to give to their new theme
      */
-    let themeName = "";
+    let themeName = $state("");
     updateCurrentProperties();
     /**
      * From a input[type=color] event, update the custom color property
@@ -83,7 +73,7 @@
     /**
      * The object that contains all the custom themes made by the user
      */
-    let availableThemes: any;
+    let availableThemes: any = $state();
     /**
      * Refresh the available custom themes
      */
@@ -94,14 +84,10 @@
     }
     getNewTheme();
     /**
-     * An event dispatcher, currently called only when the dialog needs to be closed (e.g. for enabling the screensaver function)
-     */
-    const dispatch = createEventDispatcher();
-    /**
      * The author of the displayed license
      */
-    let showLicenseId = "2024 Dinoosauro";
-    let currentLanguage = localStorage.getItem("ffmpegWeb-SelectedLanguage") ?? navigator.language?.substring(0, 2) ?? "en"
+    let showLicenseId = $state("2024 Dinoosauro");
+    let currentLanguage = $state(localStorage.getItem("ffmpegWeb-SelectedLanguage") ?? navigator.language?.substring(0, 2) ?? "en")
     function saveLanguageChange(e: Event) {
         localStorage.setItem(
             "ffmpegWeb-SelectedLanguage",
@@ -109,6 +95,7 @@
         );
         currentLanguage = (e.target as HTMLInputElement).value;
     }
+    let {closeFn}: {closeFn: () => void} = $props();
 </script>
 
 <div class="flex hcenter wcenter" style="gap: 10px">
@@ -123,7 +110,7 @@
     <p>{getLang("Use the following FFmpeg version:")}</p>
     <select
         bind:value={Settings.version}
-        on:change={() => ffmpegVersionUsed.set(Settings.version)}
+        onchange={() => (Writables.ffmpegVersionUsed = Settings.version)}
     >
         <option value="0.11.x"
             >FFmpeg WebAssembly (0.11.x) {typeof window.nativeOperations !==
@@ -147,14 +134,14 @@
                 text={getLang(
                     "Enable multithreaded version of FFmpeg WebAssembly",
                 )}
-                on:change={({ detail }) => (Settings.useMultiThreaded = detail)}
+                onchange={enabled => (Settings.useMultiThreaded = enabled)}
                 checked={Settings.useMultiThreaded}
             ></Switch><br />
             <Switch
                 text={getLang(
                     "Use WORKERFS for file writing operations. This helps reducing RAM usage.",
                 )}
-                on:change={({ detail }) => (Settings.enableWorkerFS = detail)}
+                onchange={enabled => (Settings.enableWorkerFS = enabled)}
                 checked={Settings.enableWorkerFS}
             ></Switch>
         </span>
@@ -163,12 +150,12 @@
     {/if}<br />
     <Switch
         text={getLang("Exit after each timestamp conversion")}
-        on:change={({ detail }) => (Settings.exit.afterTimestamp = detail)}
+        onchange={enabled => (Settings.exit.afterTimestamp = enabled)}
         checked={Settings.exit.afterTimestamp}
     ></Switch><br />
     <Switch
         text={getLang("Exit after each file conversion")}
-        on:change={({ detail }) => (Settings.exit.afterFile = detail)}
+        onchange={enabled => (Settings.exit.afterFile = enabled)}
         checked={Settings.exit.afterFile}
     ></Switch><br />
 </Card>
@@ -182,7 +169,7 @@
         </div>
         <select
             bind:value={Settings.storageMethod}
-            on:change={() => currentStorageMethod.set(Settings.storageMethod)}
+            onchange={() => (Writables.currentStorageMethod = Settings.storageMethod)}
         >
             {#if typeof window.showDirectoryPicker !== "undefined"}
                 <optgroup
@@ -219,7 +206,7 @@
         </select>
     </Card>
 {/if}<br />
-{#if $ffmpegVersionUsed === "native"}
+{#if Writables.ffmpegVersionUsed === "native"}
     <Card forceColor={true} type={1}>
         <div class="flex hcenter" style="gap: 8px">
             <AdaptiveAsset asset="games" width={26}></AdaptiveAsset>
@@ -233,8 +220,8 @@
         </p>
         <select
             bind:value={Settings.hardwareAcceleration.type}
-            on:change={() => {
-                $showBufSize =
+            onchange={() => {
+                Writables.showBufSize =
                     Settings.hardwareAcceleration.type === "vaapi" ||
                     Settings.hardwareAcceleration.type === "nvidia" ||
                     Settings.hardwareAcceleration.type === "amd";
@@ -303,8 +290,8 @@
             text={getLang(
                 "Use AudioToolbox encoder when choosing standard AAC (not libfdk_aac) and ALAC audio codecs. Available only on macOS.",
             )}
-            on:change={({ detail }) =>
-                (Settings.hardwareAcceleration.audioToolbox = detail)}
+            onchange={enabled =>
+                (Settings.hardwareAcceleration.audioToolbox = enabled)}
             checked={Settings.hardwareAcceleration.audioToolbox}
         ></Switch><br />
     </Card><br />
@@ -325,7 +312,7 @@
         <br />
         <ChipContainer>
             <Chip
-                on:userSelection={({ detail }) => (propertyChanged = detail)}
+                onUserSelection={enabled => (propertyChanged = enabled)}
                 selectionItems={themeProps}
             ></Chip>
         </ChipContainer><br />
@@ -334,7 +321,7 @@
                 type="color"
                 style="padding: 10px; background-color: var(--row)"
                 bind:value={currentProperties[propertyChanged].str}
-                on:input={setCustomColor}
+                oninput={setCustomColor}
             />
             <label>
                 Opacity:
@@ -347,7 +334,7 @@
                         16,
                     )}
                     bind:this={opacitySelector}
-                    on:change={convertOpacityInput}
+                    onchange={convertOpacityInput}
                 />
             </label>
         </div>
@@ -358,7 +345,7 @@
                 <input type="text" bind:value={themeName} />
                 <button
                     style="width: fit-content"
-                    on:click={() => {
+                    onclick={() => {
                         let obj = { ...currentProperties };
                         for (const property in obj)
                             obj[property] =
@@ -380,15 +367,15 @@
                 {#each Object.keys(CustomizationHandler.standardThemes) as key (key)}
                     <SingleThemeOption
                         {key}
-                        on:themeChanged={updateCurrentProperties}
-                        on:themeDeleted={getNewTheme}
+                        themeChangedCallback={updateCurrentProperties}
+                        themeDeletedCallback={getNewTheme}
                         isDefault={true}
                     ></SingleThemeOption>
                 {/each}
                 {#each Object.keys(availableThemes) as key (key)}
                     <SingleThemeOption
-                        on:themeChanged={updateCurrentProperties}
-                        on:themeDeleted={getNewTheme}
+                        themeChangedCallback={updateCurrentProperties}
+                        themeDeletedCallback={getNewTheme}
                         {key}
                     ></SingleThemeOption>
                 {/each}
@@ -421,7 +408,7 @@
     </div>
     <Switch
         text={getLang("Enable screensaver")}
-        on:change={({ detail }) => (Settings.screenSaver.enabled = detail)}
+        onchange={enabled => (Settings.screenSaver.enabled = enabled)}
         checked={Settings.screenSaver.enabled}
     ></Switch>
     {#if Settings.screenSaver.enabled}
@@ -445,22 +432,29 @@
             <h4>{getLang("Available content in the screensaver:")}</h4>
             <Switch
                 text={getLang("Show file name")}
-                on:change={({ detail }) =>
-                    (Settings.screenSaver.options.showConversionName = detail)}
+                onchange={enabled =>
+                    (Settings.screenSaver.options.showConversionName = enabled)}
                 checked={Settings.screenSaver.options.showConversionName}
             ></Switch><br />
             <Switch
                 text={getLang("Show conversion progress and console output")}
-                on:change={({ detail }) =>
+                onchange={enabled =>
                     (Settings.screenSaver.options.showConversionStatus =
-                        detail)}
+                        enabled)}
                 checked={Settings.screenSaver.options.showConversionStatus}
+            ></Switch><br />
+            <Switch
+                text={getLang("Show the estimate time")}
+                onchange={enabled =>
+                    (Settings.screenSaver.options.showEstimate =
+                        enabled)}
+                checked={Settings.screenSaver.options.showEstimate}
             ></Switch><br />
             <Switch
                 text={getLang("Enable screensaver in fullscreen mode")}
                 checked={Settings.screenSaver.options.fullscreen}
-                on:change={({ detail }) =>
-                    (Settings.screenSaver.options.fullscreen = detail)}
+                onchange={enabled =>
+                    (Settings.screenSaver.options.fullscreen = enabled)}
             ></Switch>
         </Card><br />
         <label class="flex hcenter" style="gap: tpx">
@@ -473,10 +467,10 @@
         <button
             in:slide={{ duration: 600 }}
             out:slide={{ duration: 600 }}
-            on:click={() => {
-                screensaverActivationTime.set(Date.now());
-                showScreensaver.set(true);
-                dispatch("close");
+            onclick={() => {
+                Writables.screensaverInfo.activationTime = Date.now();
+                Writables.screensaverInfo.enabled = true;
+                closeFn();
             }}>{getLang("Enable screensaver now")}</button
         >
     {/if}
@@ -491,7 +485,7 @@
         now, refresh the page.
     </p>
     <select
-        on:change={saveLanguageChange}
+        onchange={saveLanguageChange}
         value={currentLanguage}
     >
         <option value="en">English (EN)</option>
@@ -509,7 +503,7 @@
     <Switch
         text={getLang("Enable alerts")}
         checked={Settings.alerts.show}
-        on:change={({ detail }) => (Settings.alerts.show = detail)}
+        onchange={enabled => (Settings.alerts.show = enabled)}
     ></Switch><br />
     {#if Settings.alerts.show}
         <Card forceColor={true}>
@@ -518,7 +512,7 @@
                 <input type="number" bind:value={Settings.alerts.time} />
                 ms
             </label><br />
-            <button on:click={() => (Settings.alerts.ignored = [])}
+            <button onclick={() => (Settings.alerts.ignored = [])}
                 >{getLang("Reset ignored alerts")}</button
             >
         </Card>
@@ -531,9 +525,9 @@
     </div>
     <Switch
         checked={Settings.fileSaver.keepInMemory}
-        on:change={({ detail }) => {
-            Settings.fileSaver.keepInMemory = detail;
-            $changedFileSave = detail;
+        onchange={enabled => {
+            Settings.fileSaver.keepInMemory = enabled;
+            Writables.changedFileSave = enabled;
         }}
         text={getLang("Keep Blobs saved")}
     ></Switch><br />
@@ -543,8 +537,8 @@
                 text={getLang(
                     "Immediately delete Blobs after download. Disable this if you aren't able to download files",
                 )}
-                on:change={({ detail }) =>
-                    (Settings.fileSaver.revokeObjectUrl = detail)}
+                onchange={enabled =>
+                    (Settings.fileSaver.revokeObjectUrl = enabled)}
                 checked={Settings.fileSaver.revokeObjectUrl}
             ></Switch>
         </Card><br />
@@ -552,10 +546,10 @@
     <Switch
         text={getLang("Save conversion preferences")}
         checked={localStorage.getItem("ffmpegWeb-SavePreferences") !== "a"}
-        on:change={({ detail }) =>
+        onchange={enabled =>
             localStorage.setItem(
                 "ffmpegWeb-SavePreferences",
-                detail ? "b" : "a",
+                enabled ? "b" : "a",
             )}
     ></Switch>
 </Card><br />
@@ -572,7 +566,7 @@
     <ChipContainer type={0}>
         <Chip
             useRowColor={true}
-            on:userSelection={({ detail }) => (showLicenseId = detail)}
+            onUserSelection={id => (showLicenseId = id)}
             selectionItems={[
                 {
                     display: "ffmpeg-web",
@@ -661,13 +655,13 @@
         ><br /><br />
         <Switch
             text={getLang("Show installation instructions")}
-            on:change={({ detail }) => {
-                Settings.showInstallationPrompt = detail;
-                showInstallationCard.set(detail);
+            onchange={enabled => {
+                Settings.showInstallationPrompt = enabled;
+                ( Writables.showInstallationCard = enabled);
             }}
             checked={Settings.showInstallationPrompt}
         ></Switch><br />
-        <button on:click={() => updateDialogShown.set(true)}
+        <button onclick={() => (Writables.updateDialogShown = true)}
             >{getLang("Show update changelog")}</button
         >
     </Card>

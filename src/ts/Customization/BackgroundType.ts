@@ -1,5 +1,5 @@
 import IndexedDatabase from "../Storage/IndexedDatabase";
-import Settings from "../TabOptions/Settings"
+import Settings from "../TabOptions/Settings.svelte"
 
 /**
  * Save the timeout of the image change so that multiple timeouts aren't set

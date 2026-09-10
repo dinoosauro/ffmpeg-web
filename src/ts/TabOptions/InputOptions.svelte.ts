@@ -1,6 +1,6 @@
 import type { ChipInterface } from "../../interfaces/chip";
-import UpdateStorage from "../Storage/UpdateStorage";
-import Settings from "./Settings";
+
+// See the $effects in `App.svelte` for the logic used to save this object in the LocalStorage every time it's changed.
 
 let InputOptions: { val: ChipInterface[] } = { val: [] };
 if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {
@@ -11,5 +11,5 @@ if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {
         console.warn("Failed settings recovery");
     }
 }
-InputOptions = UpdateStorage(InputOptions, "ffmpegWeb-LastInputStorage");
-export default InputOptions;
+let state = $state(InputOptions);
+export default state;

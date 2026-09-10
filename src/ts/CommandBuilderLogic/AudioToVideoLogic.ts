@@ -1,14 +1,15 @@
-import type { FFmpegEvent } from "../../interfaces/ffmpeg";
+import type { FFmpegEvent, FfmpegEventDetails } from "../../interfaces/ffmpeg";
 import CreateTopDialog from "../CreateTopDialog";
+import ConsoleEvents from "../FFmpegUtils/ConsoleEvents";
 import FfmpegHandler from "../FFmpegUtils/FFmpegBuilder";
 import ffmpeg from "../FFmpegUtils/FFmpegClass";
 import FFmpegFileNameHandler from "../FFmpegUtils/FFmpegHandleFileName";
 import { getLang } from "../LanguageAdapt";
 import FileSaver from "../SaveFile";
-import ConversionOptions from "../TabOptions/ConversionOptions";
+import ConversionOptions from "../TabOptions/ConversionOptions.svelte";
 import EncoderInfo from "../TabOptions/EncoderInfo";
-import Settings from "../TabOptions/Settings";
-import { albumToVideoBackground, conversionFileDone } from "../Writables";
+import Settings from "../TabOptions/Settings.svelte";
+import Writables from "../Writables.svelte";
 
 /**
  * Convert an audio file to a video one, displaying the album art and additional metadata
@@ -23,7 +24,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
     /**
      * Get the possible custom album art. If undefined, it hasn't been provided, so the music's album art will be used
      */
-    const chosenImage = albumToVideoBackground.img;
+    const chosenImage = Writables.albumToVideoBackground.img;
     const [videoCodec, audioCodec] = [ConversionOptions.videoTypeSelected, ConversionOptions.audioTypeSelected];
     const obj = new ffmpeg(((Settings.version === "0.11.x" && chosenConversionOptions.disable011 ? "0.12.x" : Settings.version) as "0.11.x" | "0.12.x"), chosenConversionOptions.useSingleThreadedIfAvailable);
     await obj.promise;
@@ -32,7 +33,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
     * Get if multiple timestamps must be added or not
     */
     const multipleTimestamps = false;
-    CreateTopDialog(`${getLang("Started operation")} ${obj.operationId}! ${getLang(`Change the Operation ID from the "Conversion Status" tab to see the current progress.`)}`, "OperationStarted");
+    CreateTopDialog(`${getLang("Started operation")} ${obj.operationId + 1}! ${getLang(`Change the Operation ID from the "Conversion Status" tab to see the current progress.`)}`, "OperationStarted");
     /**
      * An object that will contain as its key the name of the metadata property, and as its value the content of the metadata property
      */
@@ -49,12 +50,12 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
      * Get the content from the console, so that, when metadata is written there, they'll be added in the JSON object
      * @param value the result of the FFmpegEvent
      */
-    function consoleUpdate(value: FFmpegEvent) {
-        if (value.detail.str.indexOf("Duration: ") !== -1) { // Found the audio duration
-            const duration = value.detail.str.substring(value.detail.str.indexOf("Duration: ") + "Duration: ".length);
+    function consoleUpdate(value: FfmpegEventDetails) {
+        if (value.str.indexOf("Duration: ") !== -1) { // Found the audio duration
+            const duration = value.str.substring(value.str.indexOf("Duration: ") + "Duration: ".length);
             audioDuration = duration.substring(0, duration.indexOf(","));
         }
-        for (const str of value.detail.str.split("\n")) { // On native version, sometimes the passed content is more than one line, mergining multiple metadata fields. By splitting it for each newline, we make sure that all the metadata is available
+        for (const str of value.str.split("\n")) { // On native version, sometimes the passed content is more than one line, mergining multiple metadata fields. By splitting it for each newline, we make sure that all the metadata is available
             if (str.indexOf(" : ") !== -1 && str.startsWith("    ")) { // Metadata divider
                 let key = str.substring(0, str.indexOf(":")).trim();
                 if (metadataObject[key]) return; // Do not add again metadata that has already been added previously
@@ -67,14 +68,17 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
     const ffmpegOperation = new FfmpegHandler(obj, { addedFromInput: true, disableCut: true });
     for (const singleFile of pickedFiles) {
         if (singleFile.name.startsWith("._")) continue;
-        // @ts-ignore
-        document.addEventListener("consoleUpdate", consoleUpdate);
-        conversionFileDone.update((val) => { // Update the writable that contains all the information about this conversion with the file progress and its name
-            if (!val[obj.operationId] || val[obj.operationId][0] === 0) val[obj.operationId] = [0, pickedFiles.length, ""]; // Initialize the array entry: [file number, file length, file name]
-            val[obj.operationId][0]++;
-            val[obj.operationId][2] = singleFile.name;
-            return [...val];
-        })
+        ConsoleEvents.registerConsoleEvent(consoleUpdate);
+        // Update the writable that contains all the information about this conversion with the file progress and its name
+        if (!Writables.conversionFileDone.currentFile[obj.operationId]) { // Initialize the entries
+            Writables.conversionFileDone.currentFile[obj.operationId] = 0;
+            Writables.conversionFileDone.maxFiles[obj.operationId] = pickedFiles.length;
+            Writables.conversionFileDone.fileNames[obj.operationId] = "";
+
+        } 
+        Writables.conversionFileDone.currentFile[obj.operationId]++;
+        Writables.conversionFileDone.fileNames[obj.operationId] = singleFile.name;
+        Writables.conversionFileDone.startDate[obj.operationId] = Date.now();
         ffmpegOperation.addFiles([singleFile]);
         /**
          * A random UUID for the current image operation.
@@ -200,8 +204,8 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
             image.onerror = () => resolve([1000, 1000]);
             image.src = objectUrl;
         });
-        // @ts-ignore | We no longer need to fetch console updates
-        document.removeEventListener("consoleUpdate", consoleUpdate);
+        // We no longer need to fetch console updates
+        ConsoleEvents.deleteConsoleEvent(consoleUpdate);
         for (const str in metadataObject) metadataObject[str] = metadataObject[str].substring(0, metadataObject[str].length - 1); // Delete \n from all the metadata fields
         chosenConversionOptions.saveTemp && await obj.writeFile(new File([JSON.stringify(metadataObject)], `__FfmpegWebExclusive__metadata_${randomImageIdentifier}.json`), true);
         /**
@@ -312,7 +316,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
             /**
              * If the output file is a Uint8Array, the result is from FFmpeg WebAssembly, and it'll be written using standard JavaScript APIs. Otherwise, it's a path for the native FFmpeg process, and it'll be moved using Node's FS API.
              */
-            for (const { file, extension, suggestedFileName } of start) file instanceof Uint8Array ? await fileSave.write(file, multipleTimestamps ? suggestedFileName : `${FFmpegFileNameHandler(singleFile).substring(0, FFmpegFileNameHandler(singleFile).lastIndexOf("."))}.${extension}`) : await fileSave.native(file, multipleTimestamps ? suggestedFileName : `${singleFile.name.substring(0, singleFile.name.lastIndexOf("."))}.${extension}`, obj.operationId, singleFile.path);
+            for (const { file, extension, suggestedFileName } of start) file instanceof Uint8Array ? await fileSave.write(file, multipleTimestamps ? suggestedFileName : `${FFmpegFileNameHandler(singleFile).substring(0, FFmpegFileNameHandler(singleFile).lastIndexOf("."))}.${extension}`) : await fileSave.native(file, multipleTimestamps ? suggestedFileName : `${singleFile.name.substring(0, singleFile.name.lastIndexOf("."))}.${extension}`, obj.operationId, window.nativeOperations.getFilePath(singleFile));
         } catch (ex) {
             console.error(ex);
             break;
@@ -322,7 +326,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
             if (chosenConversionOptions.saveTemp && FFmpegFileNameHandler(singleFile) !== file && file !== `__FfmpegWebExclusive__run${randomImageIdentifier}.txt`) {
                 const tempFile = await obj.readFile(file);
                 const title = `[${fileSave.sanitize(singleFile.name)}] ${file.replace("__FfmpegWebExclusive__", "").replace(`_${randomImageIdentifier}`, "")}`;
-                tempFile ? await fileSave.write(tempFile, title) : await fileSave.native(file, title, obj.operationId, singleFile.path);
+                tempFile ? await fileSave.write(tempFile, title) : await fileSave.native(file, title, obj.operationId, window.nativeOperations.getFilePath(singleFile));
             }
             await obj.removeFile(file, true); // And remove the source files from the FS.
         }
@@ -338,10 +342,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
     }
     await fileSave.release(); // Save .zip file if necessary
     !Settings.exit.afterFile && obj.exit();
-    conversionFileDone.update((val) => {
-        val[obj.operationId][0] = -1; // With "-1", the conversion is marked as completed
-        return [...val];
-    })
+    Writables.conversionFileDone.currentFile[obj.operationId] = -1;
     CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId}`, "OperationCompleted");
 }
 

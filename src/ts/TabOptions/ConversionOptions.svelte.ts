@@ -1,6 +1,8 @@
-import UpdateStorage from "../Storage/UpdateStorage";
+import { writable } from "svelte/store";
 import UpdateJsonProperties from "../UpdateJSONProperties";
-import Settings from "./Settings";
+import Settings from "./Settings.svelte";
+
+// See the $effects in `App.svelte` for the logic used to save this object in the LocalStorage every time it's changed.
 
 let ConversionOptions = {
     isAudioSelected: true,
@@ -57,7 +59,12 @@ let ConversionOptions = {
     },
     imageOptions: {
         useSlider: true,
-        value: "80"
+        value: "80",
+        customFrame: {
+            enabled: true,
+            frame: 1
+        },
+        extractOnlyOneFrame: true
     },
     forceCopyMetadata: false,
     conversionOption: 4,
@@ -143,5 +150,5 @@ if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {
     const json = JSON.parse(localStorage.getItem("ffmpegWeb-LastSettings") ?? "{}");
     ConversionOptions = UpdateJsonProperties(json, ConversionOptions);
 }
-ConversionOptions = UpdateStorage(ConversionOptions, "ffmpegWeb-LastSettings");
-export default ConversionOptions;
+const state = $state(ConversionOptions);
+export default state;

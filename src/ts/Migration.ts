@@ -1,8 +1,8 @@
-import ConversionOptions from "./TabOptions/ConversionOptions";
-import InputOptions from "./TabOptions/InputOptions";
-import MergeOptions from "./TabOptions/MergeOptions";
-import MetadataOptions from "./TabOptions/MetadataOptions";
-import Settings from "./TabOptions/Settings";
+import ConversionOptions from "./TabOptions/ConversionOptions.svelte";
+import InputOptions from "./TabOptions/InputOptions.svelte";
+import MergeOptions from "./TabOptions/MergeOptions.svelte";
+import MetadataOptions from "./TabOptions/MetadataOptions.svelte";
+import Settings from "./TabOptions/Settings.svelte";
 
 interface OldSelection {
     ref: string,

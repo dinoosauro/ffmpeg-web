@@ -1,9 +1,9 @@
 <script>
     import { GetImage } from "../../../ts/ImageHandler";
     import { getLang } from "../../../ts/LanguageAdapt";
-    import ConversionOptions from "../../../ts/TabOptions/ConversionOptions";
+    import ConversionOptions from "../../../ts/TabOptions/ConversionOptions.svelte";
     import EncoderInfo from "../../../ts/TabOptions/EncoderInfo";
-    import { imageFormatSelected } from "../../../ts/Writables";
+    import Writables from "../../../ts/Writables.svelte";
     import AdaptiveAsset from "../../UIElements/AdaptiveAsset.svelte";
     import Chip from "../../UIElements/ChipElements/Chip.svelte";
     import ChipContainer from "../../UIElements/ChipElements/ChipContainer.svelte";
@@ -16,9 +16,8 @@
 <p>
     {getLang(
         "You can convert images to various output formats. You can apply the same filters as the video part",
-    )}
+    )}.
 </p>
-<br />
 <p>{getLang("Image output format:")}</p>
 <ChipContainer>
     <Chip
@@ -29,9 +28,9 @@
                 selected: item[0] === ConversionOptions.videoTypeSelected,
             };
         })}
-        on:userSelection={({ detail }) => {
-            ConversionOptions.imageTypeSelected = detail;
-            imageFormatSelected.set(detail);
+        onUserSelection={enabled => {
+            ConversionOptions.imageTypeSelected = enabled;
+            Writables.imageFormatSelected = enabled;
         }}
     ></Chip>
 </ChipContainer>

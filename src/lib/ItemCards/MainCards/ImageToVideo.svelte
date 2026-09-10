@@ -1,6 +1,6 @@
 <script>
     import { getLang } from "../../../ts/LanguageAdapt";
-    import ConversionOptions from "../../../ts/TabOptions/ConversionOptions";
+    import ConversionOptions from "../../../ts/TabOptions/ConversionOptions.svelte";
     import AdaptiveAsset from "../../UIElements/AdaptiveAsset.svelte";
     import Card from "../../UIElements/Card/Card.svelte";
     import Switch from "../../UIElements/Switch.svelte";

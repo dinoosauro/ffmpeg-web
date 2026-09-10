@@ -1,9 +1,9 @@
 import type { FFmpegVersions, FfmpegConsole, FfmpegUrls } from "../../interfaces/ffmpeg";
-import { conversionFailedDate, conversionProgress, conversionText, currentConversionValue, showOverwriteDialog } from "../Writables";
-import type { IpcRendererEvent } from "electron";
+import Writables from "../Writables.svelte";
 import FFmpegFileNameHandler from "./FFmpegHandleFileName";
 import handleFileStringForOS from "../HandleFileString";
-import Settings from "../TabOptions/Settings";
+import Settings from "../TabOptions/Settings.svelte";
+import ConsoleEvents from "./ConsoleEvents";
 /**
  * An array that contains the number of seconds of each ffmpeg conversion
  */
@@ -15,9 +15,9 @@ const totalSecondsFetched: number[] = [];
  */
 function updateConsole({ operation, str }: FfmpegConsole) {
     if (typeof str !== "string") return;
-    if (!conversionText[operation]) conversionText[operation] = []; // Create a placeholder container
-    if (conversionText[operation].length > 300) conversionText[operation].splice(0, 1);
-    conversionText[operation].push(str);
+    if (!Writables.conversionText[operation]) Writables.conversionText[operation] = []; // Create a placeholder container
+    if (Writables.conversionText[operation].length > 300) Writables.conversionText[operation].splice(0, 1);
+    Writables.conversionText[operation].push(str);
     /**
      * Convert a FFmpeg video duration string to the number of seconds
      * @param getDuration the hh:MM:ss.ff string
@@ -31,21 +31,21 @@ function updateConsole({ operation, str }: FfmpegConsole) {
     if (str.indexOf("Duration: ") !== -1) { // Update the total length of the file
         totalSecondsFetched[operation] = getSecondsFromFfmpeg(str.substring(str.indexOf("Duration: ") + "Duration: ".length));
     } else if (totalSecondsFetched[operation] && str.indexOf("time=") !== -1) { // Found the time ffmpeg has encoded. Calculate the ratio, and then trigger the "setProcess" event. 
-        conversionProgress[operation] = getSecondsFromFfmpeg(str.substring(str.indexOf("time=") + "time=".length)) / totalSecondsFetched[operation];
+        Writables.conversionProgress[operation] = getSecondsFromFfmpeg(str.substring(str.indexOf("time=") + "time=".length)) / totalSecondsFetched[operation];
     }
-    document.dispatchEvent(new CustomEvent("consoleUpdate", { detail: { str, operation, progress: conversionProgress[operation] } }));
+    ConsoleEvents.sendMessage({ str, operation, progress: Writables.conversionProgress[operation] });
 }
 if (typeof window.nativeOperations !== "undefined") { // Setup Electron messages
     window.nativeOperations.on("ConsoleMsg", (event, { str, operation }) => {
         updateConsole({ str, operation });
         if (str.trim().endsWith("Overwrite? [y/N]")) { // Ask the user if they want to overwrite
-            let file = conversionText[operation].join("").substring(0, str.lastIndexOf("already exists"));
+            let file = Writables.conversionText[operation].join("").substring(0, str.lastIndexOf("already exists"));
             file = file.substring(file.lastIndexOf("file ") + 5);
-            showOverwriteDialog.set(file); // Set the value as the name of the file to replace. The overwrite dialog will be automatically shown
+            Writables.showOverwriteDialog = file; // Set the value as the name of the file to replace. The overwrite dialog will be automatically shown
         }
         document.getElementById("addContent")?.scrollTo({ top: document.getElementById("addContent")?.scrollHeight, behavior: "smooth" });
     });
-    window.nativeOperations.on("ConsoleError", () => conversionFailedDate.set(Date.now()));
+    window.nativeOperations.on("ConsoleError", () => (Writables.conversionFailedDate = Date.now()));
 }
 
 export default class ffmpeg {
@@ -73,10 +73,9 @@ export default class ffmpeg {
     #filesAlreadyMounted: string[] = []
     constructor(type: FFmpegVersions, forceSingleThreaded?: boolean ) {
         this.promise = new Promise<void>((resolve) => { this.#resolvePromise = resolve })
-        currentConversionValue.update((val) => { // New conversion ID
-            this.operationId = val;
-            return val + 1;
-        });
+        // New conversion ID
+        this.operationId = Writables.currentConversionValue;
+        Writables.currentConversionValue = Writables.currentConversionValue + 1;
         switch (type) {
             case "0.11.x":
                 import("ffmpeg11").then(async (ffmpeg) => {
@@ -103,7 +102,7 @@ export default class ffmpeg {
                         await obj.run(...command);
                     }
                     obj.setLogger(({ message }) => {
-                        message === "Conversion failed!" && conversionFailedDate.set(Date.now());
+                        message === "Conversion failed!" && (Writables.conversionFailedDate = Date.now());
                         updateConsole({ str: message, operation: this.operationId });
                         document.getElementById("addContent")?.scrollTo({ top: document.getElementById("addContent")?.scrollHeight, behavior: "smooth" })
                     });
@@ -111,7 +110,7 @@ export default class ffmpeg {
                         obj.FS("unlink", typeof file === "string" ? file : FFmpegFileNameHandler(file));
                     }
                     this.exit = () => obj.exit();
-                    obj.setProgress(({ ratio }) => conversionProgress[this.operationId] = ratio);
+                    obj.setProgress(({ ratio }) => Writables.conversionProgress[this.operationId] = ratio);
                     this.#resolvePromise();
                 });
                 break;
@@ -164,7 +163,7 @@ export default class ffmpeg {
                         })
                     }
                     obj.on("log", ({ message }) => {
-                        message === "Conversion failed!" && conversionFailedDate.set(Date.now());
+                        message === "Conversion failed!" && (Writables.conversionFailedDate = Date.now());
                         updateConsole({ str: message, operation: this.operationId });
                         document.getElementById("addContent")?.scrollTo({ top: document.getElementById("addContent")?.scrollHeight, behavior: "smooth" })
                     });
@@ -181,7 +180,7 @@ export default class ffmpeg {
                         }
                     }
                     this.exit = () => obj.terminate();
-                    obj.on("progress", ({ progress }) => conversionProgress[this.operationId] = progress);
+                    obj.on("progress", ({ progress }) => Writables.conversionProgress[this.operationId] = progress);
                     this.#resolvePromise();
                 });
                 break;

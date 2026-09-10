@@ -1,7 +1,7 @@
 <script>
     import { GetImage } from "../../../ts/ImageHandler";
     import { getLang } from "../../../ts/LanguageAdapt";
-    import InputOptions from "../../../ts/TabOptions/InputOptions";
+    import InputOptions from "../../../ts/TabOptions/InputOptions.svelte";
     import OptionsPicker from "../../OptionsPicker.svelte";
     import AdaptiveAsset from "../../UIElements/AdaptiveAsset.svelte";
 </script>

@@ -1,6 +1,6 @@
-import UpdateStorage from "../Storage/UpdateStorage";
 import UpdateJsonProperties from "../UpdateJSONProperties";
-import Settings from "./Settings";
+
+// See the $effects in `App.svelte` for the logic used to save this object in the LocalStorage every time it's changed.
 
 interface Metadata {
     keepCurrentMetadata: boolean;
@@ -20,5 +20,5 @@ if (localStorage.getItem("ffmpegWeb-SavePreferences") !== "a") {
     const json = JSON.parse(localStorage.getItem("ffmpegWeb-LastMetadataEditOptions") ?? "{}");
     MetadataOptions = UpdateJsonProperties(json, MetadataOptions);
 }
-MetadataOptions = UpdateStorage(MetadataOptions, "ffmpegWeb-LastMetadataEditOptions");
-export default MetadataOptions;
+let state = $state(MetadataOptions);
+export default state;

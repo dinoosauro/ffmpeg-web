@@ -1,24 +1,29 @@
 <script lang="ts">
     import { onDestroy } from "svelte";
     import { getLang } from "../../ts/LanguageAdapt";
-    import { currentlyPressedKeys } from "../../ts/Writables";
+    import Writables from "../../ts/Writables.svelte";   
 
-    /**
+    
+    interface Props {
+        /**
      * Move the "Close dialog" button at the top of the UI
      */
-    export let closeAtTop = false;
-
-    /**
+        closeAtTop?: boolean;
+        /**
      * The function that will be called for closing them
      */
-    export let closeFunction = () => {};
+        closeFunction?: any;
+        children?: import('svelte').Snippet;
+    }
+
+    let { closeAtTop = false, closeFunction = () => {}, children }: Props = $props();
     /**
      * The dialog container
      */
     let dialog: HTMLElement;
-    const unsubscribe = currentlyPressedKeys.subscribe((val) => {
-        val.indexOf("escape") !== -1 && closeAnimation();
-    });
+    $effect(() => {
+        Writables.currentlyPressedKeys.indexOf("escape") !== -1 && closeAnimation();
+    })
     async function closeAnimation() {
         dialog.classList.remove("simpleAnimate");
         await new Promise((resolve) => setTimeout(resolve, 15));
@@ -30,20 +35,19 @@
         await new Promise((resolve) => setTimeout(resolve, 550));
         closeFunction();
     }
-    onDestroy(unsubscribe);
 </script>
 
 <div class="dialog simpleAnimate" bind:this={dialog}>
     <div>
         <div>
             {#if closeAtTop}
-                <button on:click={closeAnimation}
+                <button onclick={closeAnimation}
                     >{getLang("Close dialog")}</button
                 ><br /><br />
             {/if}
-            <slot></slot>
+            {@render children?.()}
             {#if !closeAtTop}
-                <br /><br /><button on:click={closeAnimation}
+                <br /><br /><button onclick={closeAnimation}
                     >{getLang("Close dialog")}</button
                 >
             {/if}

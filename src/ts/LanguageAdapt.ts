@@ -296,7 +296,15 @@ let translations = new Map<string, TranslationRequirements>([
     ["Remote control:", {it: "Controllo remoto:"}],
     ["You can share the conversion progress to a server you control, so that you can control the progress from anywhere. If you want to enable this completely optional feature, write the server URL below.", {it: "Puoi condividere l'andamento della conversione ad un server che controlli. In questo modo, potrai controllare il progresso della conversione da qualsiasi luogo. Se vuoi abilitare questa funzionalità totalmente opzionale, scrivi l'URL del server qui in basso."}],
     ["Server URL:", {it: "URL del server:"}],
-    ["Click here to download the Python script to self-host the server", {it: "Clicca qui per scaricare lo script Python del server"}]
+    ["Click here to download the Python script to self-host the server", {it: "Clicca qui per scaricare lo script Python del server"}],
+    ["Note that, if you've enabled hardware acceleration, the conversion might fail if you have selected non-standard aspect ratios", {it: "Nota che, se hai abilitato l'accelerazione hardware, la conversione potrebbe fallire se hai selezionato degli aspect ratio che non sono standard"}],
+    ["Extract a specific frame from the video", {it: "Estrai un frame specifico dal video"}],
+    ["Extract this frame", {it: "Estrai questo frame"}],
+    ["Frame extraction:", {it: "Estrazione dei frame:"}],
+    ["Extract only one frame", {it: "Estrai solo un frame"}],
+    ["Started at", {it: "Iniziato alle:"}],
+    ["Estimated time", {it: "Tempo previsto"}],
+    ["Show the estimate time", {it: "Mostra il tempo previsto"}]
 ])
 /**
  * Translate a string

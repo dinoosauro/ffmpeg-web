@@ -1,4 +1,4 @@
-import Settings from "../TabOptions/Settings";
+import Settings from "../TabOptions/Settings.svelte";
 /**
  * According to the properties available of the file, get the path that'll be used for the FFmpeg command.
  * @param file the File object that'll be used for getting the path
@@ -7,7 +7,7 @@ import Settings from "../TabOptions/Settings";
 export default function FFmpegFileNameHandler(file: File, customExtension?: string) {
     const suggestedVersion = Settings.version as "0.11.x" | "native";
     if (!(file instanceof File)) return changeCustomExtension(file, customExtension);
-    return changeCustomExtension((suggestedVersion === "native" ? file.path : undefined) || file.webkitRelativePath || file.name, customExtension);
+    return changeCustomExtension((suggestedVersion === "native" ? window.nativeOperations.getFilePath(file) : undefined) || file.webkitRelativePath || file.name, customExtension);
 }
 
 /**

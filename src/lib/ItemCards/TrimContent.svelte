@@ -1,6 +1,6 @@
 <script>
     import { getLang } from "../../ts/LanguageAdapt";
-    import ConversionOptions from "../../ts/TabOptions/ConversionOptions";
+    import ConversionOptions from "../../ts/TabOptions/ConversionOptions.svelte";
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import Card from "../UIElements/Card/Card.svelte";
     import Switch from "../UIElements/Switch.svelte";
@@ -71,9 +71,9 @@
                 text={getLang("Timestamp at the left")}
                 checked={ConversionOptions.trimOptions.multipleTimestamps
                     .timestampAtLeft}
-                on:change={({ detail }) =>
+                onchange={enabled =>
                     (ConversionOptions.trimOptions.multipleTimestamps.timestampAtLeft =
-                        detail)}
+                        enabled)}
             ></Switch><br />
             <textarea
                 bind:value={ConversionOptions.trimOptions.multipleTimestamps
@@ -82,9 +82,9 @@
             ></textarea><br /><br />
             <Switch
                 text={getLang("Automatically add title and track metadata")}
-                on:change={({ detail }) =>
+                onchange={enabled =>
                     (ConversionOptions.trimOptions.multipleTimestamps.smartMetadata =
-                        detail)}
+                        enabled)}
                 checked={ConversionOptions.trimOptions.multipleTimestamps
                     .smartMetadata}
             ></Switch>
@@ -103,9 +103,9 @@
             {/if}<br>
             <Switch
                 text={getLang("Speed up multiple timestamp conversion by using a little bit more RAM. Disable if you're facing conversion issues.")}
-                on:change={({ detail }) =>
+                onchange={enabled =>
                     (ConversionOptions.trimOptions.multipleTimestamps.copySources =
-                        detail)}
+                        enabled)}
                 checked={ConversionOptions.trimOptions.multipleTimestamps
                     .copySources}
             ></Switch>

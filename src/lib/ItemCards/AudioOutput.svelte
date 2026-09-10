@@ -1,11 +1,11 @@
 <script>
-    import ConversionOptions from "../../ts/TabOptions/ConversionOptions";
+     import ConversionOptions from "../../ts/TabOptions/ConversionOptions.svelte";
     import { getLang } from "../../ts/LanguageAdapt";
     import Card from "../UIElements/Card/Card.svelte";
     import Switch from "../UIElements/Switch.svelte";
     import BitrateSelection from "./BitrateSelection.svelte";
     import ConversionStatus from "./ConversionStatus.svelte";
-    import { audioBitrateSettings } from "../../ts/Writables";
+    import Writables from "../../ts/Writables.svelte";
     import Dialog from "../UIElements/Dialog.svelte";
     import DialogAnimationStart from "../../ts/DialogAnimationStart";
     import { GetImage } from "../../ts/ImageHandler";
@@ -13,7 +13,7 @@
     /**
      * If the "Audio filters" dialog should be shown or not
      */
-    let showFilterDialog = false;
+    let showFilterDialog = $state(false);
 </script>
 
 <Card>
@@ -21,7 +21,7 @@
         <AdaptiveAsset asset="musicnote"></AdaptiveAsset>
         <h2>{getLang("Audio output:")}</h2>
     </div>
-    {#if !$audioBitrateSettings[1]}
+    {#if !Writables.audioBitrateSettings[1]}
         
             <BitrateSelection type="audio"></BitrateSelection>
         <br />
@@ -40,20 +40,20 @@
     <br />
     <Switch
         text={getLang("Keep album art")}
-        on:change={({ detail }) =>
-            (ConversionOptions.audioOptions.keepAlbumArt = detail)}
+        onchange={enabled =>
+            (ConversionOptions.audioOptions.keepAlbumArt = enabled)}
         checked={ConversionOptions.audioOptions.keepAlbumArt}
     ></Switch><br />
     <Switch
         checked={ConversionOptions.forceCopyMetadata}
-        on:change={({ detail }) =>
-            (ConversionOptions.forceCopyMetadata = detail)}
+        onchange={enabled =>
+            (ConversionOptions.forceCopyMetadata = enabled)}
         text={getLang(
             "Copy all the metadata at the end. Enable this only if FFmpeg, by default, has discarded some metadata. This applies both for video and audio formats.",
         )}
     ></Switch><br /><br />
     <button
-        on:click={(e) => {
+        onclick={(e) => {
             DialogAnimationStart(e);
             showFilterDialog = true;
         }}>{getLang("Add audio filters")}</button

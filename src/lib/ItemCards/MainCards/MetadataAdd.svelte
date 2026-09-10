@@ -1,7 +1,7 @@
 <script>
     import { GetImage } from "../../../ts/ImageHandler";
     import { getLang } from "../../../ts/LanguageAdapt";
-    import MetadataOptions from "../../../ts/TabOptions/MetadataOptions";
+    import MetadataOptions from "../../../ts/TabOptions/MetadataOptions.svelte";
     import AdaptiveAsset from "../../UIElements/AdaptiveAsset.svelte";
     import Switch from "../../UIElements/Switch.svelte";
 </script>
@@ -19,10 +19,10 @@
 <Switch
     text={getLang("Keep current metadata")}
     checked={MetadataOptions.keepCurrentMetadata}
-    on:change={({ detail }) => (MetadataOptions.keepCurrentMetadata = detail)}
+    onchange={enabled => (MetadataOptions.keepCurrentMetadata = enabled)}
 ></Switch><br />
 <Switch
     text={getLang("Keep album art in MP4 files, disabling custom tags")}
     checked={MetadataOptions.keepMP4Thumbnail}
-    on:change={({ detail }) => (MetadataOptions.keepMP4Thumbnail = detail)}
+    onchange={enabled => (MetadataOptions.keepMP4Thumbnail = enabled)}
 ></Switch><br />

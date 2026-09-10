@@ -1,10 +1,10 @@
 <script>
     import { getLang } from "../../ts/LanguageAdapt";
-    import Settings from "../../ts/TabOptions/Settings";
-    import { showInstallationCard } from "../../ts/Writables";
+    import Settings from "../../ts/TabOptions/Settings.svelte";
+    import Writables from "../../ts/Writables.svelte";
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import Card from "../UIElements/Card/Card.svelte";
-    let instructionType = "electron";
+    let instructionType = $state("electron");
 </script>
 
 <Card>
@@ -72,9 +72,9 @@
         {/if}
     </Card><br />
     <button
-        on:click={() => {
+        onclick={() => {
             Settings.showInstallationPrompt = false;
-            showInstallationCard.set(false);
+            Writables.showInstallationCard = false;
         }}>{getLang("Hide this card")}</button
     >
 </Card>

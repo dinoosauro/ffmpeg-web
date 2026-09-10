@@ -1,21 +1,7 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
     import type { ChipInterface } from "../../../interfaces/chip";
-    /**
-     * An array of the chips to show, with their:
-     * @param `id` their ID
-     * @param `display`: the string that'll be shown
-     * @param `selected`: if they are selected or not
-     */
-    export let selectionItems: ChipInterface[];
-    /**
-     * If the chip items shouldn't be selected. This is called `isInputChip` since originally it was used only to save of custom input arguments
-     */
-    export let isInputChip = false;
-    /**
-     * Create a dispatcher, that'll be used to comunicate to the main tab that the user has clicked on a Chip.
-     */
-    const dispatch = createEventDispatcher();
+    
+    
     /**
      * Change the item that is marked as selected
      * @param e the Click event
@@ -28,17 +14,39 @@
         target.classList.add("selected");
         return true;
     }
-    export let useRowColor = false;
+    interface Props {
+        /**
+     * An array of the chips to show, with their:
+     * @param `id` their ID
+     * @param `display`: the string that'll be shown
+     * @param `selected`: if they are selected or not
+     */
+        selectionItems: ChipInterface[];
+        /**
+     * If the chip items shouldn't be selected. This is called `isInputChip` since originally it was used only to save of custom input arguments
+     */
+        isInputChip?: boolean;
+        useRowColor?: boolean;
+        /**
+         * Function called when the user changes the selected element
+         * @param id the id selected by the user
+         */
+        onUserSelection: (id: string) => void
+    }
+
+    let { selectionItems, isInputChip = false, useRowColor = false, onUserSelection }: Props = $props();
 </script>
 
 {#each selectionItems as { display, id, selected } (id)}
+    <!-- svelte-ignore a11y_interactive_supports_focus -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
         role="button"
         class={`chip${selected || isInputChip ? " selected" : ""}${isInputChip ? " chipInput" : ""}`}
         style={useRowColor ? "background-color: var(--row)" : undefined}
-        on:click={(e) =>
+        onclick={(e) =>
             (!isInputChip ? changeSelected(e) : true) &&
-            dispatch("userSelection", id)}
+            onUserSelection(id)}
     >
         {display}
     </div>

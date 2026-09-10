@@ -1,12 +1,17 @@
 <script lang="ts">
     import Card from "../Card/Card.svelte";
-    export let type = 1;
+    interface Props {
+        type?: number;
+        children?: import('svelte').Snippet;
+    }
+
+    let { type = 1, children }: Props = $props();
 </script>
 
 <!--The container for the Chip elements, that permits to have them all on a single row-->
 <Card {type}>
     <div class={`flex chipContainer${type === 0 ? " autoChip" : ""}`}>
-        <slot></slot>
+        {@render children?.()}
     </div>
 </Card>
 

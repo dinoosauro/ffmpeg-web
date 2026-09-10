@@ -1,5 +1,6 @@
 import TopDialog from "../lib/UIElements/TopDialog.svelte";
-import Settings from "./TabOptions/Settings";
+import Settings from "./TabOptions/Settings.svelte";
+import { mount, unmount } from "svelte";
 
 /**
  * Create a new dialog at the top of the page
@@ -11,7 +12,7 @@ export default function CreateTopDialog(str: string, id: string) {
     const div = document.createElement("div");
     document.body.append(div);
     setTimeout(() => {
-        const alert = new TopDialog({ target: div, props: { alternativeText: str, closeDialog: () => { alert.$destroy(); div.remove(); }, dialogId: id } });
+        const alert = mount(TopDialog, { target: div, props: { alternativeText: str, closeDialog: () => { unmount(alert); div.remove(); }, dialogId: id } });
     }, 25);
 
 }

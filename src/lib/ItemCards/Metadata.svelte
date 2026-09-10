@@ -1,7 +1,7 @@
 <script>
     import { GetImage } from "../../ts/ImageHandler";
     import { getLang } from "../../ts/LanguageAdapt";
-    import MetadataOptions from "../../ts/TabOptions/MetadataOptions";
+    import MetadataOptions from "../../ts/TabOptions/MetadataOptions.svelte";
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import Card from "../UIElements/Card/Card.svelte";
     import Chip from "../UIElements/ChipElements/Chip.svelte";
@@ -11,7 +11,7 @@
     /**
      * The metadata key the user wants to edit
      */
-    let userSelected = "custom";
+    let userSelected = $state("custom");
     /**
      * The custom key the user wants to edit
      */
@@ -33,7 +33,7 @@
     <br />
     <ChipContainer>
         <Chip
-            on:userSelection={({ detail }) => (userSelected = detail)}
+            onUserSelection={id => (userSelected = id)}
             selectionItems={[
                 { display: "Custom", id: "custom", selected: true },
                 { display: "Album", id: "album" },
@@ -70,7 +70,7 @@
             <textarea bind:value={userEditedValue}></textarea></label
         ><br />
         <button
-            on:click={() =>
+            onclick={() =>
                 (MetadataOptions.metadataAdded = [
                     ...MetadataOptions.metadataAdded,
                     {
@@ -100,7 +100,7 @@
                         <p>({metadata.key})</p>
                         <button
                             style="width: fit-content"
-                            on:click={() => {
+                            onclick={() => {
                                 const index =
                                     MetadataOptions.metadataAdded.findIndex(
                                         (item) => item.id === metadata.id,
@@ -123,8 +123,8 @@
     <Switch
         text={getLang("Add custom album art")}
         checked={!!MetadataOptions.customAlbumArt}
-        on:change={({ detail }) => {
-            if (!detail) {
+        onchange={enabled => {
+            if (!enabled) {
                 MetadataOptions.customAlbumArt = false;
                 return;
             }
@@ -140,7 +140,7 @@
     <Switch
         text={getLang("Delete every video track (also the source album art)")}
         checked={MetadataOptions.deleteVideo}
-        on:change={({ detail }) => (MetadataOptions.deleteVideo = detail)}
+        onchange={enabled => (MetadataOptions.deleteVideo = enabled)}
     ></Switch>
 </Card>
 

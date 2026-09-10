@@ -1,6 +1,7 @@
 import type { ChipInterface } from "../../interfaces/chip";
-import UpdateStorage from "../Storage/UpdateStorage";
 import UpdateJsonProperties from "../UpdateJSONProperties";
+
+// See the $effects in `App.svelte` for the logic used to save this object in the LocalStorage every time it's changed.
 
 let Settings = {
     version: typeof window.nativeOperations === "undefined" ? "0.11.x" : "native",
@@ -29,7 +30,8 @@ let Settings = {
             showConversionName: true,
             showConversionStatus: true,
             fullscreen: true,
-            moveContent: 30000
+            moveContent: 30000,
+            showEstimate: true
         },
     },
     fileSaver: {
@@ -57,6 +59,6 @@ let Settings = {
 }
 const json = JSON.parse(localStorage.getItem("ffmpegWeb-LastGeneralSettings") ?? "{}");
 Settings = UpdateJsonProperties(json, Settings);
-Settings = UpdateStorage(Settings, "ffmpegWeb-LastGeneralSettings")
 
-export default Settings;
+let state = $state(Settings);
+export default state;

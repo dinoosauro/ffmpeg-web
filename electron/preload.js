@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer, shell } = require('electron');
+const { contextBridge, ipcRenderer, shell, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('nativeOperations', {
     on(eventName, callback) {
@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('nativeOperations', {
     },
     async invoke(channel, ...params) {
         return ipcRenderer.invoke(channel, ...params);
+    },
+    getFilePath(file) {
+        return webUtils.getPathForFile(file);
     },
     removeAllListeners(name) {
         ipcRenderer.removeAllListeners(name);

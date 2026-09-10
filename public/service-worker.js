@@ -30,7 +30,9 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => self.clients.claim());
 self.addEventListener('fetch', event => {
     const req = event.request;
-    if (req.url.indexOf("updatecode") !== -1 || req.url.indexOf("youtube") !== -1) event.respondWith(fetch(req)); else event.respondWith(networkFirst(req));
+    if (req.url.indexOf("updatecode") !== -1 || new URL(req.url).origin !== self.location.origin) {
+        return;
+    } else event.respondWith(networkFirst(req));
 });
 /**
  * The BroadcastChannel used to communicate with the main window

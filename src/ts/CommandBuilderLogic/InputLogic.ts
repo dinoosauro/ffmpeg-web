@@ -1,11 +1,11 @@
 import ffmpeg from "../FFmpegUtils/FFmpegClass";
 import FFmpegFileNameHandler from "../FFmpegUtils/FFmpegHandleFileName";
 import FfmpegHandler from "../FFmpegUtils/FFmpegBuilder";
-import InputOptions from "../TabOptions/InputOptions";
+import InputOptions from "../TabOptions/InputOptions.svelte";
 import FileSaver from "../SaveFile";
-import Settings from "../TabOptions/Settings";
+import Settings from "../TabOptions/Settings.svelte";
 import CreateTopDialog from "../CreateTopDialog";
-import { conversionFileDone } from "../Writables";
+import Writables from "../Writables.svelte";
 import { getLang } from "../LanguageAdapt";
 import FileDivider from "./FileDivider";
 
@@ -41,19 +41,21 @@ export default async function InputLogic(generalFiles: File[], handle?: FileSyst
             patch();
             getVal[i] = getVal[i].replace(/\$dollar/gi, "$");
         }
-        conversionFileDone.update((val) => {
-            val[obj.operationId] = [1, 1, getVal[getVal.length - 1]]; // Only a file will be elaborated
-            return [...val];
-        })
 
-        CreateTopDialog(`${getLang("Started operation")} ${obj.operationId}! ${getLang(`Change the Operation ID from the "Conversion Status" tab to see the current progress.`)}`, "OperationStarted");
+        // Since only a file will be elaborated, we can just initialize the variables
+        Writables.conversionFileDone.currentFile[obj.operationId] = 1;
+        Writables.conversionFileDone.maxFiles[obj.operationId] = 1;
+        Writables.conversionFileDone.fileNames[obj.operationId] = getVal[getVal.length - 1];
+        Writables.conversionFileDone.startDate[obj.operationId] = Date.now();
+
+        CreateTopDialog(`${getLang("Started operation")} ${obj.operationId + 1}! ${getLang(`Change the Operation ID from the "Conversion Status" tab to see the current progress.`)}`, "OperationStarted");
         /**
          * Everything here is basically the same as "FileLogic" and "ImageLogic". I won't copy again the documentation
          */
         const logic = new FfmpegHandler(obj, { addedFromInput: true });
         logic.addFiles(files);
         try {
-            for (let { file, suggestedFileName } of await logic.start(getVal)) file instanceof Uint8Array ? await fileSave.write(file, suggestedFileName) : await fileSave.native(file, suggestedFileName, obj.operationId, files[0].path);
+            for (let { file, suggestedFileName } of await logic.start(getVal)) file instanceof Uint8Array ? await fileSave.write(file, suggestedFileName) : await fileSave.native(file, suggestedFileName, obj.operationId, window.nativeOperations.getFilePath(files[0]));
         } catch (ex) {
             console.error(ex);
             break;
@@ -63,10 +65,7 @@ export default async function InputLogic(generalFiles: File[], handle?: FileSyst
         Settings.exit.afterFile && obj.exit(); // Exit from FFmpeg
     }
     await fileSave.release();
-    conversionFileDone.update((val) => {
-        val[obj.operationId][0] = -1;
-        return [...val];
-    })
+    Writables.conversionFileDone.currentFile[obj.operationId] = -1;
     obj.exit();
     CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId}`, "OperationCompleted");
 

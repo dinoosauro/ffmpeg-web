@@ -2,35 +2,43 @@
     import ImageToVideoLogic from "../../ts/CommandBuilderLogic/ImageToVideoLogic";
     import FFmpegFileNameHandler from "../../ts/FFmpegUtils/FFmpegHandleFileName";
     import { getLang } from "../../ts/LanguageAdapt";
-    import ConversionOptions from "../../ts/TabOptions/ConversionOptions";
+     import ConversionOptions from "../../ts/TabOptions/ConversionOptions.svelte";
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import Card from "../UIElements/Card/Card.svelte";
     import Dialog from "../UIElements/Dialog.svelte";
     import ImageToVideoTransitionSelect from "./ImageToVideoTransitionSelect.svelte";
-    /**
+    
+    
+    
+    interface Props {
+        /**
      * All the files that the user has selected, even if they don't look like images (maybe the user has changed their extension)
      */
-    export let fetchedFiles: File[];
+        fetchedFiles: File[];
+        /**
+     * The function to call to close this dialog
+     */
+        discardOption: () => void;
+        /**
+     * The possible FileSystemDirectoryHandle to write the output video directly on device.
+     */
+        handle: FileSystemDirectoryHandle | undefined;
+    }
+
+    let { fetchedFiles, discardOption, handle }: Props = $props();
+
     /**
      * The output object with all the information to convert these images to a video
      */
-    let mappedFiles = fetchedFiles.map(i => {return {file: i, id: crypto.randomUUID(), url: URL.createObjectURL(i), duration: 5, transition: "none", transitionKey: "none", transitionDuration: 1}});
-    /**
-     * The function to call to close this dialog
-     */
-    export let discardOption: () => void;
-    /**
-     * The possible FileSystemDirectoryHandle to write the output video directly on device.
-     */
-    export let handle: FileSystemDirectoryHandle | undefined;
+    let mappedFiles = $state(fetchedFiles.map(i => {return {file: i, id: crypto.randomUUID(), url: URL.createObjectURL(i), duration: 5, transition: "none", transitionKey: "none", transitionDuration: 1}}));
     /**
      * Maximum width of all the loaded images
      */
-    let currentWidth = 0;
+    let currentWidth = $state(0);
     /**
      * Maximum height of all the loaded images
      */
-    let currentHeight = 0;
+    let currentHeight = $state(0);
     /**
      * Update the `currentWidth` and `currentHeight` properties after an image has been successfully loaded
      * @param e the onload Event
@@ -62,9 +70,9 @@
             {#each mappedFiles as file, i (file.id)}
                     <tr>
                         <td>
-                            <img on:load={(e) => updateImageProps(e)} src={file.url}>
+                            <img onload={(e) => updateImageProps(e)} src={file.url}>
                             <strong style="text-align: center; display: block">
-                                <input step="1" type="number" style="width: fit-content; appearance: none;" value={i + 1} min="1" max={mappedFiles.length} on:change={(e) => {
+                                <input step="1" type="number" style="width: fit-content; appearance: none;" value={i + 1} min="1" max={mappedFiles.length} onchange={(e) => {
                                     mappedFiles.splice(+e.currentTarget.value - 1, 0, mappedFiles.splice(i, 1)[0]);
                                     mappedFiles = [...mappedFiles];
                                 }}>
@@ -73,17 +81,19 @@
                         <td style="word-break: break-all;overflow-wrap: break-word; white-space: normal;">
                             {file.file.name}
                         </td>
-                        <td><input type="number" min="0" value={file.duration} on:change={(e) => {
+                        <td><input type="number" min="0" value={file.duration} onchange={(e) => {
                             mappedFiles[mappedFiles.findIndex(i => i.id === file.id)].duration = +e.currentTarget.value;
                         }}></td>
                         <td>
-                            <ImageToVideoTransitionSelect selectedKey={file.transitionKey} on:edit={({detail}) => (mappedFiles[mappedFiles.findIndex(i => i.id === file.id)].transition = detail)} on:editKey={({detail}) => (mappedFiles[mappedFiles.findIndex(i => i.id === file.id)].transitionKey = detail)} selectedValue={file.transition} on:editDuration={({detail}) => (mappedFiles[mappedFiles.findIndex(i => i.id === file.id)].transitionDuration = detail)} currentDuration={file.transitionDuration}></ImageToVideoTransitionSelect>
+                            <ImageToVideoTransitionSelect selectedKey={file.transitionKey} editCallback={(transition) => {
+                                mappedFiles[mappedFiles.findIndex(i => i.id === file.id)].transition = transition;
+                            }} editKeyCallback={(transitionKey) => (mappedFiles[mappedFiles.findIndex(i => i.id === file.id)].transitionKey = transitionKey)} selectedValue={file.transition} editDurationCallback={(duration) => (mappedFiles[mappedFiles.findIndex(i => i.id === file.id)].transitionDuration = duration)} currentDuration={file.transitionDuration}></ImageToVideoTransitionSelect>
                         </td>
                     </tr>
             {/each}
             </tbody>
         </table></div><br>
-        <button on:click={() => {
+        <button onclick={() => {
             ImageToVideoLogic({files: mappedFiles.filter(i => i.duration !== 0), width: ConversionOptions.imageToVideo.autoWidth ? currentWidth : ConversionOptions.imageToVideo.width, height: ConversionOptions.imageToVideo.autoWidth ? currentHeight : ConversionOptions.imageToVideo.height}, handle);
             discardOption();
         }}>{getLang("Start conversion")}</button>

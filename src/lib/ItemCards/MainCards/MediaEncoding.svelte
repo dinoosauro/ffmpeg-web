@@ -1,22 +1,29 @@
-<script>
+<script lang="ts">
     import { slide } from "svelte/transition";
-    import ConversionOptions from "../../../ts/TabOptions/ConversionOptions";
+    import ConversionOptions from "../../../ts/TabOptions/ConversionOptions.svelte";
     import Switch from "../../UIElements/Switch.svelte";
     import ChipContainer from "../../UIElements/ChipElements/ChipContainer.svelte";
     import Chip from "../../UIElements/ChipElements/Chip.svelte";
     import EncoderInfo from "../../../ts/TabOptions/EncoderInfo";
     import { getLang } from "../../../ts/LanguageAdapt";
-    import { audioBitrateSettings } from "../../../ts/Writables";
-    import { createEventDispatcher } from "svelte";
+    import Writables from "../../../ts/Writables.svelte";
     import { GetImage } from "../../../ts/ImageHandler";
     import AdaptiveAsset from "../../UIElements/AdaptiveAsset.svelte";
     import Card from "../../UIElements/Card/Card.svelte";
-    const dispatch = createEventDispatcher();
-    /**
+    
+    interface Props {
+        /**
      * If only the selection should be displayed, without the title
      */
-    export let isMinimal = false;
-    export let showOnlyVideo = false;
+        isMinimal?: boolean;
+        showOnlyVideo?: boolean;
+        /**
+         * Function called when the user has enabled or disable video or audio encoding
+         */
+        enabledCardCallback?: ({isVideo, result}: {isVideo: boolean, result: boolean}) => void
+    }
+
+    let { isMinimal = false, showOnlyVideo = false, enabledCardCallback }: Props = $props();
 </script>
 
 <div in:slide={{ duration: 600, delay: 600 }} out:slide={{ duration: 600 }}>
@@ -31,9 +38,9 @@
             )}
         </p>
         <Switch
-            on:change={({ detail }) => {
-                ConversionOptions.isVideoSelected = detail;
-                dispatch("enabledCard", { isVideo: true, result: detail });
+            onchange={enabled => {
+                ConversionOptions.isVideoSelected = enabled;
+                enabledCardCallback && enabledCardCallback({ isVideo: true, result: enabled });
             }}
             checked={ConversionOptions.isVideoSelected}
             text={getLang("Enable video source")}
@@ -46,8 +53,8 @@
     <span in:slide={{ duration: 600 }} out:slide={{ duration: 600 }}>
         <ChipContainer type={1}>
             <Chip
-                on:userSelection={({ detail }) => {
-                    ConversionOptions.videoTypeSelected = detail;
+                onUserSelection={id => {
+                    ConversionOptions.videoTypeSelected = id;
                 }}
                 selectionItems={Array.from(EncoderInfo.video).map((item) => {
                     return {
@@ -64,9 +71,9 @@
 {/if}
 {#if !isMinimal}
     <Switch
-        on:change={({ detail }) => {
-            ConversionOptions.isAudioSelected = detail;
-            dispatch("enabledCard", { isVideo: false, result: detail });
+        onchange={enabled => {
+            ConversionOptions.isAudioSelected = enabled;
+            enabledCardCallback && enabledCardCallback({ isVideo: false, result: enabled });
         }}
         checked={ConversionOptions.isAudioSelected}
         text={getLang("Enable audio source")}
@@ -78,14 +85,14 @@
     <span in:slide={{ duration: 600 }} out:slide={{ duration: 600 }}>
         <ChipContainer>
             <Chip
-                on:userSelection={({ detail }) => {
-                    ConversionOptions.audioTypeSelected = detail;
-                    if (detail === "libopus") {
+                onUserSelection={id => {
+                    ConversionOptions.audioTypeSelected = id;
+                    if (id === "libopus") {
                         ConversionOptions.audioOptions.useSlider = false;
-                        audioBitrateSettings.set([true, false]);
-                    } else if (EncoderInfo.audio.get(detail)?.isLossless)
-                        audioBitrateSettings.set([false, true]);
-                    else audioBitrateSettings.set([false, false]);
+                        Writables.audioBitrateSettings = [true, false];
+                    } else if (EncoderInfo.audio.get(id)?.isLossless)
+                        Writables.audioBitrateSettings = [false, true];
+                    else Writables.audioBitrateSettings = [false, false];
                 }}
                 selectionItems={Array.from(EncoderInfo.audio).map((item) => {
                     return {
@@ -102,8 +109,8 @@
 {#if !isMinimal}
 <br>
         <Switch
-        on:change={({ detail }) => {
-            ConversionOptions.outputContainerChanged = detail;
+        onchange={enabled => {
+            ConversionOptions.outputContainerChanged = enabled;
         }}
         checked={ConversionOptions.outputContainerChanged}
         text={getLang("Custom output container")}
