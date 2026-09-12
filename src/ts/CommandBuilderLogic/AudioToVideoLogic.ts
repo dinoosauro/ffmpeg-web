@@ -343,7 +343,7 @@ export default async function AudioToVideoLogic(pickedFiles: File[], handle?: Fi
     await fileSave.release(); // Save .zip file if necessary
     !Settings.exit.afterFile && obj.exit();
     Writables.conversionFileDone.currentFile[obj.operationId] = -1;
-    CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId}`, "OperationCompleted");
+    CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId + 1}`, "OperationCompleted");
 }
 
 /**

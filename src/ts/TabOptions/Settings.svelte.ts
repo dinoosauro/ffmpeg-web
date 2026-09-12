@@ -55,7 +55,8 @@ let Settings = {
         afterTimestamp: false
     },
     showInstallationPrompt: true,
-    shareProgressUrl: ""
+    shareProgressUrl: "",
+    keepDirectoryHandleForFutureConversions: true
 }
 const json = JSON.parse(localStorage.getItem("ffmpegWeb-LastGeneralSettings") ?? "{}");
 Settings = UpdateJsonProperties(json, Settings);

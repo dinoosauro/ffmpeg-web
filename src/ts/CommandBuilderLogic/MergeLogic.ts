@@ -41,5 +41,5 @@ export default async function MergeLogic(files: File[], handle?: FileSystemDirec
     await fileSave.release();
     Writables.conversionFileDone.currentFile[obj.operationId] = -1;
     obj.exit();
-    CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId}`, "OperationCompleted");
+    CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId + 1}`, "OperationCompleted");
 }

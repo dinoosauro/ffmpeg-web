@@ -57,5 +57,5 @@ export default async function FileLogic(pickedFiles: File[], handle?: FileSystem
     await fileSave.release(); // Save .zip file if necessary
     !Settings.exit.afterFile && obj.exit();
     Writables.conversionFileDone.currentFile[obj.operationId] = -1; // With "-1", the conversion is marked as completed
-    CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId}`, "OperationCompleted");
+    CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId + 1}`, "OperationCompleted");
 }

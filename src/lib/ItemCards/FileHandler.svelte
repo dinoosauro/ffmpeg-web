@@ -14,6 +14,7 @@
     import AdaptiveAsset from "../UIElements/AdaptiveAsset.svelte";
     import AudioToVideoLogic from "../../ts/CommandBuilderLogic/AudioToVideoLogic";
     import ImageToVideoDialog from "../InnerDialog/ImageToVideoDialog.svelte";
+    import { onMount } from "svelte";
 
     /**
      * Process files that ends with this string
@@ -41,22 +42,29 @@
                         ),
                     ),
                 );
-            Writables.applicationSection === "Custom"
-                ? InputLogic(arr, directoryHandle)
-                : Writables.applicationSection === "Merge"
-                  ? MergeLogic(arr, directoryHandle)
-                  : Writables.applicationSection === "Image"
-                    ? ImageLogic(arr, directoryHandle)
-                    : Writables.applicationSection === "Metadata"
-                      ? MetadataLogic(arr, directoryHandle)
-                      : Writables.applicationSection === "AudioToVideo"
-                        ? AudioToVideoLogic(arr, directoryHandle)
-                        : Writables.applicationSection === "ImageToVideo" ?
-                        (showImageToVideoDialog = [arr, directoryHandle])
-                        : FileLogic(arr, directoryHandle);
-            directoryHandle = undefined;
+                startConversion(arr)
         };
         input.click();
+    }
+    /**
+     * Start the file conversion
+     * @param arr the files that should be converted
+     */
+    function startConversion(arr: File[]) {
+        Writables.applicationSection === "Custom"
+            ? InputLogic(arr, Writables.currentStorageMethod === "handle" ? directoryHandle : undefined)
+                : Writables.applicationSection === "Merge"
+                 ? MergeLogic(arr, Writables.currentStorageMethod === "handle" ? directoryHandle : undefined)
+                  : Writables.applicationSection === "Image"
+                    ? ImageLogic(arr, Writables.currentStorageMethod === "handle" ? directoryHandle : undefined)
+                    : Writables.applicationSection === "Metadata"
+                      ? MetadataLogic(arr, Writables.currentStorageMethod === "handle" ? directoryHandle : undefined)
+                      : Writables.applicationSection === "AudioToVideo"
+                        ? AudioToVideoLogic(arr, Writables.currentStorageMethod === "handle" ? directoryHandle : undefined)
+                        : Writables.applicationSection === "ImageToVideo" ?
+                        (showImageToVideoDialog = [arr, Writables.currentStorageMethod === "handle" ? directoryHandle : undefined])
+                        : FileLogic(arr, Writables.currentStorageMethod === "handle" ? directoryHandle : undefined);
+        if (!Settings.keepDirectoryHandleForFutureConversions) directoryHandle = undefined;
     }
     let showImageToVideoDialog: [File[], FileSystemDirectoryHandle?] | undefined = $state();
     let directoryHandle: FileSystemDirectoryHandle | undefined = $state();
@@ -74,6 +82,20 @@
             localStorage.setItem("ffmpegWeb-DefaultStorageMethod", "link");
         }
     }
+
+    onMount(() => { // Add drop event
+        window.addEventListener("dragover", (e) => e.preventDefault());
+        window.addEventListener("drop", (e) => {
+            e.preventDefault();
+            if (Writables.currentStorageMethod === "handle" && !directoryHandle) {
+                alert(getLang("Please pick from the \"File selection\" tab the folder where the converted files should be saved, then drag and drop the files again"));
+                return;
+            }
+            if (e.dataTransfer?.files && e.dataTransfer?.files.length !== 0) {
+                startConversion(Array.from(e.dataTransfer?.files));
+            }
+        })
+    })
 </script>
 
 <Card>
@@ -138,6 +160,14 @@
                 </label>
             </Card>
             <br />
+        {/if}
+        {#if Writables.currentStorageMethod === "handle"}
+        <label class="flex hcenter" style="gap: 8px">
+            <Switch text={getLang("Use this directory also for the future operations")} onchange={checked => {
+                Settings.keepDirectoryHandleForFutureConversions = checked;
+                if (!checked) directoryHandle = undefined;
+            }} checked={Settings.keepDirectoryHandleForFutureConversions}></Switch>
+        </label><br>
         {/if}
 
         {#if Writables.currentStorageMethod === "handle" && !directoryHandle}

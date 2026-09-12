@@ -115,7 +115,7 @@ let translations = new Map<string, TranslationRequirements>([
     ["Execute the same command for each file", { it: "Esegui lo stesso comando per ogni file", zh: "对每个文件执行相同的命令" }],
     ["Note: the selected files will be overwritten. Please make a copy of them before continuing.", { it: "Nota: i file selezionati verranno sovrascritti. Potrebbe essere utile fare una copia dei file prima di continuare.", zh: "注意：所选文件将被覆盖。请继续前备份文件" }],
     ["Select a folder", { it: "Scegli una cartella", zh: "选择文件夹" }],
-    ["Choose output directory", { it: "Scegli la directory di desstinazione", zh: "选择输出目录" }],
+    ["Choose output directory", { it: "Scegli la cartella di destinazione", zh: "选择输出目录" }],
     ["Choose a folder", { it: "Scegli una cartella", zh: "选择文件夹" }],
     ["Choose a file", { it: "Scegli un file", zh: "选择文件" }],
     ["folder", { it: "cartella", zh: "文件夹" }],
@@ -304,7 +304,9 @@ let translations = new Map<string, TranslationRequirements>([
     ["Extract only one frame", {it: "Estrai solo un frame"}],
     ["Started at", {it: "Iniziato alle:"}],
     ["Estimated time", {it: "Tempo previsto"}],
-    ["Show the estimate time", {it: "Mostra il tempo previsto"}]
+    ["Show the estimate time", {it: "Mostra il tempo previsto"}],
+    ["Use this directory also for the future operations", {it: "Utilizza questa cartella anche per le operazioni future"}],
+    ["Please pick from the \"File selection\" tab the folder where the converted files should be saved, then drag and drop the files again", {it: "Selezionare dalla sezione \"Selezione dei file\" la cartella dove i file dovrebbero essere salvati, e poi rilasciare i file di nuovo"}]
 ])
 /**
  * Translate a string

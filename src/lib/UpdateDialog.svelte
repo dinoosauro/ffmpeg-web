@@ -10,7 +10,16 @@
     <div class="flex hcenter wcenter">
         <AdaptiveAsset asset="icon" width={128}></AdaptiveAsset>
     </div>
-        <Card type={1} forceColor={true}>
+    <Card type={1} forceColor={true}>
+        <h3 style="text-align: center;">Version 3.3.1</h3>
+        <Card forceColor={true}>
+            <ul>
+                <li>Added drag and drop support</li>
+                <li>If the File System API is being used, it's now possilbe to save also the future conversions in the same folder</li>
+            </ul>
+        </Card>
+    </Card><br>
+    <Card type={1} forceColor={true}>
         <h3 style="text-align: center;">Version 3.3.0</h3>
         <Card forceColor={true}>
             <ul>

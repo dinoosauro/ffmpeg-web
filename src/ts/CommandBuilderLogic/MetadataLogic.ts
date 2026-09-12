@@ -56,6 +56,6 @@ export default async function MetadataLogic(files: File[], handle?: FileSystemDi
     await fileSave.release();
     !Settings.exit.afterFile && obj.exit();
     Writables.conversionFileDone.currentFile[obj.operationId] = -1;
-    CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId}`, "OperationCompleted");
+    CreateTopDialog(`${getLang("Completed operation")} ${obj.operationId + 1}`, "OperationCompleted");
 
 }
