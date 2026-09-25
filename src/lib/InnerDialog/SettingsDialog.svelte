@@ -488,6 +488,7 @@
         onchange={saveLanguageChange}
         value={currentLanguage}
     >
+        <option value="ru">Русский</option>
         <option value="en">English (EN)</option>
         <option value="it">Italiano (IT)</option>
         <option value="zh">中文 (ZH)</option>

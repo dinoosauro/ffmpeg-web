@@ -1,6 +1,9 @@
+import { russianTranslations } from "./LanguageAdapt.ru";
+
 interface TranslationRequirements {
     it?: string
     zh?: string // 添加简体中文支持
+    ru?: string
 }
 
 interface Credits {
@@ -13,9 +16,11 @@ export let languageCredits = new Map<string, Credits>([
     ["it", {username: "dinoosauro", githubLink: "https://github.com/dinoosauro"}],
     ["en", {username: "dinoosauro", githubLink: "https://github.com/dinoosauro"}],
     ["zh", {username: "God-2077", githubLink: "https://github.com/God-2077"}],
+    ["ru", {username: "bithater", githubLink: "https://github.com/bithater"}],
 ])
 
 let translations = new Map<string, TranslationRequirements>([
+
     ["The background color", { it: "Il colore dello sfondo", zh: "背景颜色" }],
     ["A background image", { it: "Una immagine come sfondo", zh: "背景图片" }],
     ["A local video", { it: "Un video locale", zh: "本地视频" }],
@@ -308,13 +313,24 @@ let translations = new Map<string, TranslationRequirements>([
     ["Use this directory also for the future operations", {it: "Utilizza questa cartella anche per le operazioni future"}],
     ["Please pick from the \"File selection\" tab the folder where the converted files should be saved, then drag and drop the files again", {it: "Selezionare dalla sezione \"Selezione dei file\" la cartella dove i file dovrebbero essere salvati, e poi rilasciare i file di nuovo"}],
     ["loading", {it: "carico"}]
-])
+ ])
+
+for (const [key, value] of Object.entries(russianTranslations)) {
+    const current = translations.get(key)
+    if (current) {
+        current.ru = value
+    } else {
+        translations.set(key, { ru: value })
+    }
+}
+
 /**
+
  * Translate a string
  * @param str the string to translate
  * @returns the translated string, if available
  */
 export function getLang(str: string) {
     const translation = translations.get(str);
-    return translation ? translation[(localStorage.getItem("ffmpegWeb-SelectedLanguage") as null | "it" | "zh") ?? navigator.language?.substring(0, 2) as "it" | "zh"] ?? str : str;
+    return translation ? translation[(localStorage.getItem("ffmpegWeb-SelectedLanguage") as null | "it" | "zh" | "ru") ?? navigator.language?.substring(0, 2) as "it" | "zh" | "ru"] ?? str : str;
 }
